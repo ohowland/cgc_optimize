@@ -2,42 +2,61 @@ package esslp
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/google/uuid"
 )
 
 type Unit struct {
-	pid         uuid.UUID
-	Cp          float64 // cost of energy production
-	Cn          float64 // cost of energy consumption
-	Cc          float64 // cost of energy capacity
-	Ce          float64 // cost of energy storage
-	constraints [][]float64
-	bounds      [][]float64
+	pid          uuid.UUID
+	coefficients []float64
+	bounds       [][2]float64
+	constraints  [][]float64
 }
 
-func NewUnit(pid uuid.UUID, Cp float64, Cn float64, Cc float64, Ce float64) Unit {
-	return Unit{pid, Cp, Cn, Cc, Ce, [][]float64{}, [][]float64{}}
+// NewUnit returns a configured unit struct.
+//
+// Cp: Cost coefficient for real positive power
+// Cn: Cost coefficient for real negative power
+// Cc: Cost coefficient for real capacity
+// Ce: Cost coefficient for stored energy
+//
+// XpUb: Upper bound for real positive power decision variable
+// XnUb: Upper bound for real negative power decision variable (positive value)
+// XcUb: Upper bound for real capacity decision variable
+// XeUb: Upper bound for stored energy
+func NewUnit(pid uuid.UUID, Cp float64, Cn float64, Cc float64, Ce float64, XpUb float64, XnUb float64, XcUb float64, XeUb float64) Unit {
+	coefficients := []float64{Cp, Cn, Cc, Ce}
+	bounds := [][2]float64{{0, XpUb}, {0, XnUb}, {0, XcUb}, {0, XeUb}}
+
+	return Unit{pid, coefficients, bounds, [][]float64{}}
+}
+
+func (u Unit) PID() uuid.UUID {
+	return u.pid
 }
 
 func (u Unit) CostCoefficients() []float64 {
-	return []float64{u.Cp, u.Cn, u.Cc, u.Ce}
+	return u.coefficients
 }
 
 func (u Unit) ColumnSize() int {
 	return 4
 }
 
-func (u *Unit) NewConstraint(t_c []float64, t_lb float64, t_ub float64) error {
-	if len(t_c) != u.ColumnSize() {
-		return errors.New("column size mismatch")
+func (u *Unit) NewConstraint(t_c ...[]float64) error {
+	cx := make([][]float64, 0)
+	for _, c := range t_c {
+		if len(c) != u.ColumnSize()+2 {
+			err := fmt.Sprintf("constraint contains %v columns, expected: %v", len(c), u.ColumnSize()+2)
+			return errors.New(err)
+		}
+		cx = append(cx, c)
 	}
-	c := []float64{t_lb}
-	c = append(c, t_c...)
-	c = append(c, t_ub)
 
-	u.constraints = append(u.constraints, c)
+	// if no errors: add constraints to unit
+	u.constraints = append(u.constraints, cx...)
 	return nil
 }
 
@@ -46,13 +65,7 @@ func (u Unit) Constraints() [][]float64 {
 }
 
 func (u Unit) Bounds() [][2]float64 {
-	inf := math.Inf(1)
-	return [][2]float64{
-		{0, inf},
-		{0, inf},
-		{0, inf},
-		{0, inf},
-	}
+	return u.bounds
 }
 
 func (u Unit) RealPositivePowerLoc() []int {
@@ -67,6 +80,39 @@ func (u Unit) RealCapacityLoc() []int {
 	return []int{2}
 }
 
-func (u Unit) StoredCapacityLoc() []int {
+func (u Unit) StoredEnergyLoc() []int {
 	return []int{3}
+}
+
+// Constraints
+
+func UnitCapacityConstraints(u *Unit) [][]float64 {
+	cx := make([][]float64, 0)
+	cx = append(cx, UnitPositiveCapacityConstraint(u))
+	cx = append(cx, UnitNegativeCapacityConstraint(u))
+	return cx
+}
+
+func UnitPositiveCapacityConstraint(u *Unit) []float64 {
+	xp := u.RealPositivePowerLoc()[0]
+	xc := u.RealCapacityLoc()[0]
+
+	cp := make([]float64, u.ColumnSize())
+	cp[xp] = -1
+	cp[xc] = 1
+
+	cp = boundConstraint(cp, 0, math.Inf(1))
+	return cp
+}
+
+func UnitNegativeCapacityConstraint(u *Unit) []float64 {
+	xn := u.RealNegativePowerLoc()[0]
+	xc := u.RealCapacityLoc()[0]
+
+	cn := make([]float64, u.ColumnSize())
+	cn[xn] = -1
+	cn[xc] = 1
+
+	cn = boundConstraint(cn, 0, math.Inf(1))
+	return cn
 }

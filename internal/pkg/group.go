@@ -2,7 +2,10 @@ package esslp
 
 import (
 	"errors"
+	"fmt"
 	"math"
+
+	"github.com/google/uuid"
 )
 
 type Group struct {
@@ -36,16 +39,18 @@ func (g Group) ColumnSize() int {
 	return s
 }
 
-func (g *Group) NewConstraint(t_c []float64, t_lb float64, t_ub float64) error {
-	if len(t_c) != g.ColumnSize() {
-		return errors.New("column size mismatch")
+func (g *Group) NewConstraint(t_c ...[]float64) error {
+	cx := make([][]float64, 0)
+	for _, c := range t_c {
+		if len(c) != g.ColumnSize()+2 {
+			err := fmt.Sprintf("constraint contains %v columns, expected: %v", len(c), g.ColumnSize()+2)
+			return errors.New(err)
+		}
+		cx = append(cx, c)
 	}
 
-	c := []float64{t_lb}
-	c = append(c, t_c...) // constraint
-	c = append(c, t_ub)   // upper bound
-
-	g.constraints = append(g.constraints, c)
+	// if no errors, append constraints to group
+	g.constraints = append(g.constraints, cx...)
 	return nil
 }
 
@@ -58,10 +63,10 @@ func (g Group) Constraints() [][]float64 {
 		pre := make([]float64, i+1)
 		post := make([]float64, s-i-u.ColumnSize()+1)
 		for _, uc := range u.Constraints() {
-			pre[0] = uc[0]                    // shift lower bound to index 0
-			post[len(post)-1] = uc[len(uc)-1] // shift upper bound at last index
+			pre[0] = lb(uc)            // shift lower bound to index 0
+			post[len(post)-1] = ub(uc) // shift upper bound at last index
 
-			c := append(append(pre, uc[1:len(uc)-1]...), post...)
+			c := append(append(pre, cons(uc)...), post...)
 			gc = append(gc, c)
 		}
 		i += u.ColumnSize()
@@ -116,12 +121,54 @@ func (g Group) RealCapacityLoc() []int {
 	return loc
 }
 
-func (g Group) StoredCapacityLoc() []int {
+func (g Group) StoredEnergyLoc() []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, u := range g.units {
-		for _, p := range u.StoredCapacityLoc() {
+		for _, p := range u.StoredEnergyLoc() {
 			loc = append(loc, p+i)
+		}
+		i += u.ColumnSize()
+	}
+	return loc
+}
+
+func (g Group) RealPositivePowerPidLoc(t_pid uuid.UUID) []int {
+	loc := make([]int, 0)
+	i := 0
+	for _, u := range g.units {
+		if u.PID() == t_pid {
+			for _, p := range u.RealPositivePowerLoc() {
+				loc = append(loc, p+i)
+			}
+		}
+		i += u.ColumnSize()
+	}
+	return loc
+}
+
+func (g Group) RealNegativePowerPidLoc(t_pid uuid.UUID) []int {
+	loc := make([]int, 0)
+	i := 0
+	for _, u := range g.units {
+		if u.PID() == t_pid {
+			for _, p := range u.RealNegativePowerLoc() {
+				loc = append(loc, p+i)
+			}
+		}
+		i += u.ColumnSize()
+	}
+	return loc
+}
+
+func (g Group) StoredEnergyPidLoc(t_pid uuid.UUID) []int {
+	loc := make([]int, 0)
+	i := 0
+	for _, u := range g.units {
+		if u.PID() == t_pid {
+			for _, p := range u.StoredEnergyLoc() {
+				loc = append(loc, p+i)
+			}
 		}
 		i += u.ColumnSize()
 	}
@@ -130,7 +177,8 @@ func (g Group) StoredCapacityLoc() []int {
 
 // Constraint Generation
 
-func NetLoadConstraint(t_nl float64, g *Group) []float64 {
+// NetLoadConstraint returns a constraint of the form: Sum_i(Xp_i - Xn_i) == t_nl
+func NetLoadConstraint(g *Group, t_nl float64) []float64 {
 	c := make([]float64, g.ColumnSize())
 
 	rpp := g.RealPositivePowerLoc()
@@ -142,12 +190,11 @@ func NetLoadConstraint(t_nl float64, g *Group) []float64 {
 		c[i] = -1.0
 	}
 
-	lbub := []float64{t_nl}
-
-	return append(append(lbub, c...), lbub...) // [low_bound, constraints, upper_bound]
+	return boundConstraint(c, t_nl, t_nl)
 }
 
-func PositiveCapacityConstraint(t_cap float64, g *Group) []float64 {
+// GroupCapacityConstriant returns a constraint of the form: Sum_i(Xc_i) >= t_cap
+func GroupPositiveCapacityConstraint(g *Group, t_cap float64) []float64 {
 	c := make([]float64, g.ColumnSize())
 
 	pc := g.RealCapacityLoc()
@@ -155,7 +202,5 @@ func PositiveCapacityConstraint(t_cap float64, g *Group) []float64 {
 		c[i] = 1.0
 	}
 
-	lb := []float64{t_cap}
-
-	return append(append(lb, c...), math.Inf(1))
+	return boundConstraint(c, t_cap, math.Inf(1))
 }

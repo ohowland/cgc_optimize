@@ -33,10 +33,13 @@ func TestGetGroupDecisionVariableCoefficients(t *testing.T) {
 	a2 := NewTestUnit()
 	ag2 := NewGroup(a1, a2)
 
-	assert.Equal(t, ag2.CostCoefficients(), []float64{a1.Cp, a1.Cn, a1.Cc, a1.Ce, a2.Cp, a2.Cn, a2.Cc, a2.Ce}, "group incorrectly formulates decision variable coefficents from internal units")
+	cc1 := a1.CostCoefficients()
+	cc2 := a2.CostCoefficients()
+	cc := append(cc1, cc2...)
+	assert.Equal(t, cc, ag2.CostCoefficients(), "group incorrectly formulates decision variable coefficents from internal units")
 
 	ag0 := NewGroup()
-	assert.Equal(t, ag0.CostCoefficients(), []float64{}, "group incorrectly formulates cost coefficents from empty unit slice")
+	assert.Equal(t, []float64{}, ag0.CostCoefficients(), "group incorrectly formulates cost coefficents from empty unit slice")
 
 }
 
@@ -48,35 +51,37 @@ func TestGetGroupColumnsSize(t *testing.T) {
 func TestNewGroupConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	a1 := NewUnit(pid1, 1.0, 2.0, 3.0, 4.0)
-	a2 := NewUnit(pid2, 5.0, 6.0, 7.0, 8.0)
+	inf := math.Inf(1)
+	a1 := NewUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
+	a2 := NewUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
 	ag1 := NewGroup(a1, a2)
 
-	c := []float64{-1.0, 0, 1.0, 0, 1.0, 0.2, 2.1, 1.1}
-	lb := 0.0
-	ub := 1.0
-	err := ag1.NewConstraint(c, lb, ub)
+	c := []float64{0.0, -1.0, 0, 1.0, 0, 1.0, 0.2, 2.1, 1.1, 1.0}
+	err := ag1.NewConstraint(c)
 	assert.Nil(t, err)
 
-	assert.Equal(t, ag1.Constraints()[0], []float64{0, -1, 0, 1, 0, 1, .2, 2.1, 1.1, 1})
+	assert.Equal(t, ag1.Constraints()[0], c)
 }
 
 func TestGroupUnitConstraints(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	a1 := NewUnit(pid1, 1.0, 2.0, 3.0, 4.0)
-	a1.NewConstraint([]float64{1.0, 0.0, 1.0, 0.0}, 0, 1)
-	a2 := NewUnit(pid2, 5.0, 6.0, 7.0, 8.0)
-	a2.NewConstraint([]float64{0.0, 2.0, 0.0, 2.0}, 1, 2)
-	ag1 := NewGroup(a1, a2)
+	inf := math.Inf(1)
+	a1 := NewUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
+	a1c := []float64{-10, 1.0, 0.0, 1.0, 0.0, 10}
+	a1.NewConstraint(a1c)
 
-	c := []float64{-1.0, 0, 1.0, 0, 1.0, 0.2, 2.1, 1.1}
-	lb := 0.0
-	ub := 1.0
-	err := ag1.NewConstraint(c, lb, ub)
+	a2 := NewUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
+	a2c := []float64{-20, 0.0, 2.0, 0.0, 2.0, 20}
+	a2.NewConstraint(a2c)
+
+	ag1 := NewGroup(a1, a2)
+	ag1c := []float64{0.0, -1.0, 0, 1.0, 0, 1.0, 0.2, 2.1, 1.1, 1.0}
+	err := ag1.NewConstraint(ag1c)
 	assert.Nil(t, err)
-	assert.Equal(t, []float64{0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1}, ag1.Constraints()[0])
-	assert.Equal(t, []float64{1, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 2.0, 2}, ag1.Constraints()[1])
+
+	assert.Equal(t, []float64{-10, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10}, ag1.Constraints()[0])
+	assert.Equal(t, []float64{-20, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 2.0, 20}, ag1.Constraints()[1])
 	assert.Equal(t, []float64{0, -1, 0, 1, 0, 1, .2, 2.1, 1.1, 1}, ag1.Constraints()[2])
 }
 
@@ -84,7 +89,7 @@ func TestBadGroupConstraint(t *testing.T) {
 	ag1 := NewTestGroup()
 	c := []float64{-1.0, 1.1}
 
-	err := ag1.NewConstraint(c, 0, 10)
+	err := ag1.NewConstraint(c)
 	assert.Error(t, err)
 }
 
@@ -124,7 +129,7 @@ func TestLocateRealCapacity(t *testing.T) {
 
 func TestLocateStoredCapacity(t *testing.T) {
 	ag1 := NewTestGroup()
-	loc := ag1.StoredCapacityLoc()
+	loc := ag1.StoredEnergyLoc()
 	assert.Equal(t, []int{3, 7}, loc)
 }
 
@@ -132,14 +137,14 @@ func TestLocateStoredCapacity(t *testing.T) {
 func TestNetloadConstraint(t *testing.T) {
 	ag1 := NewTestGroup()
 	nl := 11.1
-	nlc := NetLoadConstraint(nl, &ag1)
+	nlc := NetLoadConstraint(&ag1, nl)
 	assert.Equal(t, []float64{nl, 1, -1, 0, 0, 1, -1, 0, 0, nl}, nlc)
 }
 
 func TestPositiveCapacityConstraint(t *testing.T) {
 	ag1 := NewTestGroup()
 	pc := 22.2
-	pcc := PositiveCapacityConstraint(pc, &ag1)
+	pcc := GroupPositiveCapacityConstraint(&ag1, pc)
 	inf := math.Inf(1)
 	assert.Equal(t, []float64{pc, 0, 0, 1, 0, 0, 0, 1, 0, inf}, pcc)
 }
