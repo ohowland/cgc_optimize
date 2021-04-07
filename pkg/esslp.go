@@ -1,4 +1,4 @@
-package esslp
+package la
 
 import (
 	"github.com/lanl/clp"
