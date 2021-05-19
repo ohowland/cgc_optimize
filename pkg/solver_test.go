@@ -1,4 +1,4 @@
-package la
+package gocoinor
 
 import (
 	"fmt"

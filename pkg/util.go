@@ -1,4 +1,4 @@
-package la
+package gocoinor
 
 // lb returns the lower bounds of a constraint
 func lb(c []float64) float64 {

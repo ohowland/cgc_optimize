@@ -1,16 +1,16 @@
-package la
+package gocoinor
 
 import (
 	"github.com/lanl/clp"
 )
 
-type Work interface {
+type LinearProgram interface {
 	CostCoefficients() []float64
 	Bounds() [][2]float64
 	Constraints() [][]float64
 }
 
-func Solve(w Work) []float64 {
+func Solve(w LinearProgram) []float64 {
 	s := clp.NewSimplex()
 	s.EasyLoadDenseProblem(
 		w.CostCoefficients(),
@@ -22,5 +22,3 @@ func Solve(w Work) []float64 {
 	s.Primal(clp.NoValuesPass, clp.NoStartFinishOptions)
 	return s.PrimalColumnSolution()
 }
-
-// use same decision variable pcs
