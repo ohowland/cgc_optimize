@@ -1,7 +1,6 @@
-package gocoinor
+package cpl_adapter
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 
@@ -102,7 +101,6 @@ func TestEssLpSeriesDischargeBatteryConstraint(t *testing.T) {
 	assert.Nil(t, err)
 
 	sol := Solve(s1)
-	fmt.Println(sol)
 	assert.InDeltaSlice(t, []float64{10, 0, 10, 20, 10, 0, 10, 15, 10, 0, 10, 10, 10, 0, 10, 5}, sol, 0.1, "battery positive power not decreasing stored energy")
 }
 
@@ -124,6 +122,5 @@ func TestEssLpSeriesChargeBatteryConstraint(t *testing.T) {
 	assert.Nil(t, err)
 
 	sol := Solve(s1)
-	fmt.Println(sol)
 	assert.InDeltaSlice(t, []float64{0, 10, 10, 5, 0, 10, 10, 10, 0, 10, 10, 15, 0, 10, 10, 20}, sol, 0.1, "battery negative power not increasing stored energy")
 }

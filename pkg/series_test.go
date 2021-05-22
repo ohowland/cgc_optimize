@@ -1,4 +1,4 @@
-package gocoinor
+package cgc_optimize
 
 import (
 	"math"

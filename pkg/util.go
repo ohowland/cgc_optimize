@@ -1,5 +1,4 @@
-package gocoinor
-
+package cgc_optimize
 // lb returns the lower bounds of a constraint
 func lb(c []float64) float64 {
 	return c[0]
