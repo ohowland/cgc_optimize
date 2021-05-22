@@ -2,7 +2,13 @@ package gocoinor
 
 import (
 	"github.com/lanl/clp"
+	"github.com/ohowland/highs"
 )
+
+type MipLinearProgram interface {
+	LinearProgram
+	Integrality() []int
+}
 
 type LinearProgram interface {
 	CostCoefficients() []float64
@@ -10,7 +16,39 @@ type LinearProgram interface {
 	Constraints() [][]float64
 }
 
-func Solve(w LinearProgram) []float64 {
+func HighsLpSolve(w LinearProgram) []float64 {
+	s, err := highs.New(
+		w.CostCoefficients(),
+		w.Bounds(),
+		w.Constraints(),
+		[]int{})
+
+	if err != nil {
+		panic(err)
+	}
+
+	s.SetObjectiveSense(highs.Minimize)
+	s.RunSolver()
+	return s.PrimalColumnSolution()
+}
+
+func HighsMipSolve(w MipLinearProgram) []float64 {
+	s, err := highs.New(
+		w.CostCoefficients(),
+		w.Bounds(),
+		w.Constraints(),
+		w.Integrality())
+
+	if err != nil {
+		panic(err)
+	}
+
+	s.SetObjectiveSense(highs.Minimize)
+	s.RunSolver()
+	return s.PrimalColumnSolution()
+}
+
+func ClpSolve(w LinearProgram) []float64 {
 	s := clp.NewSimplex()
 	s.EasyLoadDenseProblem(
 		w.CostCoefficients(),
