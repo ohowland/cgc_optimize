@@ -1,10 +1,11 @@
-package highs_adapter
+package adapter
 
 import (
+	opt "github.com/ohowland/cgc_optimize"
 	"github.com/ohowland/highs"
 )
 
-func SolveLp(w LinearProgram) []float64 {
+func SolveLp(w opt.LinearProgram) []float64 {
 	s, err := highs.New(
 		w.CostCoefficients(),
 		w.Bounds(),
@@ -20,7 +21,7 @@ func SolveLp(w LinearProgram) []float64 {
 	return s.PrimalColumnSolution()
 }
 
-func SolveMip(w MipLinearProgram) []float64 {
+func SolveMip(w opt.MipLinearProgram) []float64 {
 	s, err := highs.New(
 		w.CostCoefficients(),
 		w.Bounds(),

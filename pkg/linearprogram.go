@@ -10,3 +10,4 @@ type MipLinearProgram interface {
 	LinearProgram
 	Integrality() []int
 }
+

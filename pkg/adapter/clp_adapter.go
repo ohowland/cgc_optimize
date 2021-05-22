@@ -1,10 +1,11 @@
-package cpl_adapter
+package adapter
 
 import (
 	"github.com/lanl/clp"
+	opt "github.com/ohowland/cgc_optimize"
 )
 
-func Solve(w LinearProgram) []float64 {
+func Solve(w opt.LinearProgram) []float64 {
 	s := clp.NewSimplex()
 	s.EasyLoadDenseProblem(
 		w.CostCoefficients(),
