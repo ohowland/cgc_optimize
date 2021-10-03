@@ -8,14 +8,24 @@ import (
 	"github.com/google/uuid"
 )
 
-type Unit struct {
+type Unit interface {
+	PID() uuid.UUID
+	CostCoefficients() []float64
+	Bounds() [][2]float64
+	Constraints() [][]float64
+	ColumnSize() int
+
+	RealPower() float64
+}
+
+type BasicUnit struct {
 	pid          uuid.UUID
 	coefficients []float64
 	bounds       [][2]float64
 	constraints  [][]float64
 }
 
-// NewUnit returns a configured unit struct.
+// NewBasicUnit returns a configured unit struct.
 //
 // Cp: Cost coefficient for real positive power
 // Cn: Cost coefficient for real negative power
@@ -26,26 +36,26 @@ type Unit struct {
 // XnUb: Upper bound for real negative power decision variable (positive value)
 // XcUb: Upper bound for real capacity decision variable
 // XeUb: Upper bound for stored energy
-func NewUnit(pid uuid.UUID, Cp float64, Cn float64, Cc float64, Ce float64, XpUb float64, XnUb float64, XcUb float64, XeUb float64) Unit {
+func NewBasicUnit(pid uuid.UUID, Cp float64, Cn float64, Cc float64, Ce float64, XpUb float64, XnUb float64, XcUb float64, XeUb float64) BasicUnit {
 	coefficients := []float64{Cp, Cn, Cc, Ce}
 	bounds := [][2]float64{{0, XpUb}, {0, XnUb}, {0, XcUb}, {0, XeUb}}
 
-	return Unit{pid, coefficients, bounds, [][]float64{}}
+	return BasicUnit{pid, coefficients, bounds, [][]float64{}}
 }
 
-func (u Unit) PID() uuid.UUID {
+func (u BasicUnit) PID() uuid.UUID {
 	return u.pid
 }
 
-func (u Unit) CostCoefficients() []float64 {
+func (u BasicUnit) CostCoefficients() []float64 {
 	return u.coefficients
 }
 
-func (u Unit) ColumnSize() int {
+func (u BasicUnit) ColumnSize() int {
 	return 4
 }
 
-func (u *Unit) NewConstraint(t_c ...[]float64) error {
+func (u *BasicUnit) NewConstraint(t_c ...[]float64) error {
 	cx := make([][]float64, 0)
 	for _, c := range t_c {
 		if len(c) != u.ColumnSize()+2 {
@@ -60,40 +70,40 @@ func (u *Unit) NewConstraint(t_c ...[]float64) error {
 	return nil
 }
 
-func (u Unit) Constraints() [][]float64 {
+func (u BasicUnit) Constraints() [][]float64 {
 	return u.constraints
 }
 
-func (u Unit) Bounds() [][2]float64 {
+func (u BasicUnit) Bounds() [][2]float64 {
 	return u.bounds
 }
 
-func (u Unit) RealPositivePowerLoc() []int {
+func (u BasicUnit) RealPositivePowerLoc() []int {
 	return []int{0}
 }
 
-func (u Unit) RealNegativePowerLoc() []int {
+func (u BasicUnit) RealNegativePowerLoc() []int {
 	return []int{1}
 }
 
-func (u Unit) RealCapacityLoc() []int {
+func (u BasicUnit) RealCapacityLoc() []int {
 	return []int{2}
 }
 
-func (u Unit) StoredEnergyLoc() []int {
+func (u BasicUnit) StoredEnergyLoc() []int {
 	return []int{3}
 }
 
 // Constraints
 
-func UnitCapacityConstraints(u *Unit) [][]float64 {
+func BasicUnitCapacityConstraints(u *BasicUnit) [][]float64 {
 	cx := make([][]float64, 0)
-	cx = append(cx, UnitPositiveCapacityConstraint(u))
-	cx = append(cx, UnitNegativeCapacityConstraint(u))
+	cx = append(cx, BasicUnitPositiveCapacityConstraint(u))
+	cx = append(cx, BasicUnitNegativeCapacityConstraint(u))
 	return cx
 }
 
-func UnitPositiveCapacityConstraint(u *Unit) []float64 {
+func BasicUnitPositiveCapacityConstraint(u *BasicUnit) []float64 {
 	xp := u.RealPositivePowerLoc()[0]
 	xc := u.RealCapacityLoc()[0]
 
@@ -105,7 +115,7 @@ func UnitPositiveCapacityConstraint(u *Unit) []float64 {
 	return cp
 }
 
-func UnitNegativeCapacityConstraint(u *Unit) []float64 {
+func BasicUnitNegativeCapacityConstraint(u *BasicUnit) []float64 {
 	xn := u.RealNegativePowerLoc()[0]
 	xc := u.RealCapacityLoc()[0]
 

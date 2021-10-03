@@ -9,28 +9,28 @@ import (
 )
 
 func NewTestGroup() Group {
-	a1 := NewTestUnit()
-	a2 := NewTestUnit()
+	a1 := NewTestBasicUnit()
+	a2 := NewTestBasicUnit()
 	return NewGroup(a1, a2)
 }
 
 func TestNewAssetVarsGroup(t *testing.T) {
 	ag0 := NewGroup()
-	assert.Equal(t, ag0.units, []Unit{}, "empty group does not return empty units slice")
+	assert.Equal(t, ag0.units, []BasicUnit{}, "empty group does not return empty units slice")
 
-	a1 := NewTestUnit()
+	a1 := NewTestBasicUnit()
 	ag1 := NewGroup(a1)
 	assert.Equal(t, ag1.units, []Unit{a1}, "group does not contain unit assigned in new")
 
-	a2 := NewTestUnit()
+	a2 := NewTestBasicUnit()
 	ag2 := NewGroup(a1, a2)
 	assert.Equal(t, ag2.units, []Unit{a1, a2}, "group does not contain multiple units assigned in new")
 }
 
 func TestGetGroupDecisionVariableCoefficients(t *testing.T) {
 
-	a1 := NewTestUnit()
-	a2 := NewTestUnit()
+	a1 := NewTestBasicUnit()
+	a2 := NewTestBasicUnit()
 	ag2 := NewGroup(a1, a2)
 
 	cc1 := a1.CostCoefficients()
@@ -52,8 +52,8 @@ func TestNewGroupConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
 	inf := math.Inf(1)
-	a1 := NewUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
-	a2 := NewUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
+	a1 := NewBasicUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
+	a2 := NewBasicUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
 	ag1 := NewGroup(a1, a2)
 
 	c := []float64{0.0, -1.0, 0, 1.0, 0, 1.0, 0.2, 2.1, 1.1, 1.0}
@@ -67,11 +67,11 @@ func TestGroupUnitConstraints(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
 	inf := math.Inf(1)
-	a1 := NewUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
+	a1 := NewBasicUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
 	a1c := []float64{-10, 1.0, 0.0, 1.0, 0.0, 10}
 	a1.NewConstraint(a1c)
 
-	a2 := NewUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
+	a2 := NewBasicUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
 	a2c := []float64{-20, 0.0, 2.0, 0.0, 2.0, 20}
 	a2.NewConstraint(a2c)
 

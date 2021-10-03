@@ -12,8 +12,8 @@ import (
 func TestHighsEssLpNetLoadConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	a1 := opt.NewUnit(pid1, 1.0, 2.0, 0.01, 0, 5, 5, 5, 5)
-	a2 := opt.NewUnit(pid2, 5.0, 6.0, 0.01, 0, 10, 10, 10, 10)
+	a1 := opt.NewBasicUnit(pid1, 1.0, 2.0, 0.01, 0, 5, 5, 5, 5)
+	a2 := opt.NewBasicUnit(pid2, 5.0, 6.0, 0.01, 0, 10, 10, 10, 10)
 	ag1 := opt.NewGroup(a1, a2)
 
 	nlc := opt.NetLoadConstraint(&ag1, 10)
@@ -22,14 +22,13 @@ func TestHighsEssLpNetLoadConstraint(t *testing.T) {
 	sol := SolveLp(ag1)
 	assert.InDeltaSlice(t, []float64{5, 0, 0, 0, 5, 0, 0, 0}, sol, 0.1)
 }
-
 func TestHighsEssLpAssetCapacityConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	a1 := opt.NewUnit(pid1, 1.0, 2.0, 0.01, 0, 5, 5, 5, 5)
-	a1.NewConstraint(opt.UnitCapacityConstraints(&a1)...)
-	a2 := opt.NewUnit(pid2, 5.0, 6.0, 0.01, 0, 10, 10, 10, 10)
-	a2.NewConstraint(opt.UnitCapacityConstraints(&a2)...)
+	a1 := opt.NewBasicUnit(pid1, 1.0, 2.0, 0.01, 0, 5, 5, 5, 5)
+	a1.NewConstraint(opt.BasicUnitCapacityConstraints(&a1)...)
+	a2 := opt.NewBasicUnit(pid2, 5.0, 6.0, 0.01, 0, 10, 10, 10, 10)
+	a2.NewConstraint(opt.BasicUnitCapacityConstraints(&a2)...)
 
 	ag1 := opt.NewGroup(a1, a2)
 
@@ -43,11 +42,11 @@ func TestHighsEssLpAssetCapacityConstraint(t *testing.T) {
 func TestHighsEssLpGroupCapacityConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	a1 := opt.NewUnit(pid1, 1.0, 2.0, 0.01, 0, 5, 5, 5, 5)
-	err := a1.NewConstraint(opt.UnitCapacityConstraints(&a1)...)
+	a1 := opt.NewBasicUnit(pid1, 1.0, 2.0, 0.01, 0, 5, 5, 5, 5)
+	err := a1.NewConstraint(opt.BasicUnitCapacityConstraints(&a1)...)
 	assert.Nil(t, err)
-	a2 := opt.NewUnit(pid2, 5.0, 6.0, 0.01, 0, 10, 10, 10, 10)
-	err = a2.NewConstraint(opt.UnitCapacityConstraints(&a2)...)
+	a2 := opt.NewBasicUnit(pid2, 5.0, 6.0, 0.01, 0, 10, 10, 10, 10)
+	err = a2.NewConstraint(opt.BasicUnitCapacityConstraints(&a2)...)
 	assert.Nil(t, err)
 
 	ag1 := opt.NewGroup(a1, a2)
@@ -61,11 +60,11 @@ func TestHighsEssLpGroupCapacityConstraint(t *testing.T) {
 func TestHighsEssLpClusterLinkedBusConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	a1 := opt.NewUnit(pid1, 0.1, 0.1, 0.01, 0, 5, 5, 5, 0)
-	a2 := opt.NewUnit(pid2, 2.0, 2.0, 0.01, 0, 5, 5, 5, 0)
-	err := a1.NewConstraint(opt.UnitCapacityConstraints(&a1)...)
+	a1 := opt.NewBasicUnit(pid1, 0.1, 0.1, 0.01, 0, 5, 5, 5, 0)
+	a2 := opt.NewBasicUnit(pid2, 2.0, 2.0, 0.01, 0, 5, 5, 5, 0)
+	err := a1.NewConstraint(opt.BasicUnitCapacityConstraints(&a1)...)
 	assert.Nil(t, err)
-	err = a2.NewConstraint(opt.UnitCapacityConstraints(&a2)...)
+	err = a2.NewConstraint(opt.BasicUnitCapacityConstraints(&a2)...)
 	assert.Nil(t, err)
 
 	ag1 := opt.NewGroup(a1, a2)
@@ -85,8 +84,8 @@ func TestHighsEssLpClusterLinkedBusConstraint(t *testing.T) {
 }
 func TestHighsEssLpSeriesDischargeBatteryConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
-	a1 := opt.NewUnit(pid1, 0.1, 0.1, 0.01, 0, 10, 10, 10, 20)
-	err := a1.NewConstraint(opt.UnitCapacityConstraints(&a1)...)
+	a1 := opt.NewBasicUnit(pid1, 0.1, 0.1, 0.01, 0, 10, 10, 10, 20)
+	err := a1.NewConstraint(opt.BasicUnitCapacityConstraints(&a1)...)
 	assert.Nil(t, err)
 	ag1 := opt.NewGroup(a1)
 
@@ -105,8 +104,8 @@ func TestHighsEssLpSeriesDischargeBatteryConstraint(t *testing.T) {
 }
 func TestHighsEssLpSeriesChargeBatteryConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
-	a1 := opt.NewUnit(pid1, 0.1, 0.1, 0.01, 0, 10, 10, 10, 20)
-	err := a1.NewConstraint(opt.UnitCapacityConstraints(&a1)...)
+	a1 := opt.NewBasicUnit(pid1, 0.1, 0.1, 0.01, 0, 10, 10, 10, 20)
+	err := a1.NewConstraint(opt.BasicUnitCapacityConstraints(&a1)...)
 	assert.Nil(t, err)
 	ag1 := opt.NewGroup(a1)
 

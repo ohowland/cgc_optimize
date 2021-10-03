@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func NewTestUnit() Unit {
+func NewTestBasicUnit() BasicUnit {
 	pid, _ := uuid.NewUUID()
 	rand.Seed(time.Now().Unix())
 	inf := math.Inf(1)
-	return NewUnit(pid, rand.Float64(), rand.Float64(), rand.ExpFloat64(), rand.Float64(), inf, inf, inf, inf)
+	return NewBasicUnit(pid, rand.Float64(), rand.Float64(), rand.ExpFloat64(), rand.Float64(), inf, inf, inf, inf)
 }
 
 func TestNewAssetVar(t *testing.T) {
@@ -25,7 +25,7 @@ func TestNewAssetVar(t *testing.T) {
 	Ce := 0.0
 	inf := math.Inf(1)
 
-	a := NewUnit(pid, Cp, Cn, Cc, Ce, inf, inf, inf, inf)
+	a := NewBasicUnit(pid, Cp, Cn, Cc, Ce, inf, inf, inf, inf)
 
 	assert.Equal(t, a.coefficients[0], Cp)
 	assert.Equal(t, a.coefficients[1], Cn)
@@ -34,7 +34,7 @@ func TestNewAssetVar(t *testing.T) {
 }
 
 func TestGetCostCoefficients(t *testing.T) {
-	a := NewTestUnit()
+	a := NewTestBasicUnit()
 	assert.Equal(t,
 		[]float64{a.coefficients[0],
 			a.coefficients[1],
@@ -44,12 +44,12 @@ func TestGetCostCoefficients(t *testing.T) {
 }
 
 func TestGetUnitColumnSize(t *testing.T) {
-	a1 := NewTestUnit()
+	a1 := NewTestBasicUnit()
 	assert.Equal(t, a1.ColumnSize(), 4)
 }
 
 func TestApplyUnitConstraint(t *testing.T) {
-	a1 := NewTestUnit()
+	a1 := NewTestBasicUnit()
 	c := []float64{0, 2, 0, 1, 0, 1}
 
 	err := a1.NewConstraint(c)
@@ -59,7 +59,7 @@ func TestApplyUnitConstraint(t *testing.T) {
 }
 
 func TestBadConstraint(t *testing.T) {
-	a1 := NewTestUnit()
+	a1 := NewTestBasicUnit()
 	c := []float64{0, 2, 0, 1, 0.3, 0.1, 1}
 
 	err := a1.NewConstraint(c)
@@ -67,7 +67,7 @@ func TestBadConstraint(t *testing.T) {
 }
 
 func TestReturnConstraints(t *testing.T) {
-	a1 := NewTestUnit()
+	a1 := NewTestBasicUnit()
 	c1 := []float64{0.0, 0.0, 1.0, 2.0, 3.0, 1.0}
 	c2 := []float64{0.0, 1.1, 2.2, 3.3, 4.4, 1.0}
 	c3 := []float64{0.0, -0.3, 0.2, -0.1, 0.0, 1.0}
@@ -96,7 +96,7 @@ func TestReturnConstraints(t *testing.T) {
 }
 
 func TestUnitBounds(t *testing.T) {
-	a1 := NewTestUnit()
+	a1 := NewTestBasicUnit()
 	b := a1.Bounds()
 
 	inf := math.Inf(1)
@@ -107,9 +107,9 @@ func TestUnitBounds(t *testing.T) {
 
 func TestUnitCapacityConstraint(t *testing.T) {
 	pid, _ := uuid.NewUUID()
-	a := NewUnit(pid, 1, 1, 0.1, 0, 10, 10, 10, 0)
+	a := NewBasicUnit(pid, 1, 1, 0.1, 0, 10, 10, 10, 0)
 
-	ucc := UnitCapacityConstraints(&a)
+	ucc := BasicUnitCapacityConstraints(&a)
 	for _, c := range ucc {
 		err := a.NewConstraint(c)
 		assert.Nil(t, err)
