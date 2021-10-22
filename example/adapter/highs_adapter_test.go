@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -22,6 +23,22 @@ func TestHighsEssLpNetLoadConstraint(t *testing.T) {
 	sol := SolveLp(ag1)
 	assert.InDeltaSlice(t, []float64{5, 0, 0, 0, 5, 0, 0, 0}, sol, 0.1)
 }
+
+func TestHighsPiecewise(t *testing.T) {
+	pid1, _ := uuid.NewUUID()
+	a1 := opt.NewPiecewiseUnit(pid1, []opt.CriticalPoint{opt.NewCriticalPoint(-10, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 1)})
+	ag1 := opt.NewGroup(a1)
+
+	nlc := opt.NetLoadPiecewiseConstraint(&ag1, 10)
+	ag1.NewConstraint(nlc)
+
+	fmt.Println(ag1)
+
+	_ = SolveMip(ag1)
+	//assert.InDeltaSlice(t, []float64{5, 0, 0, 0, 5, 0, 0, 0}, sol, 0.1)
+	assert.FailNow(t, "not impemented")
+}
+
 func TestHighsEssLpAssetCapacityConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()

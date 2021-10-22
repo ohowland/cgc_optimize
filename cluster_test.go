@@ -23,10 +23,10 @@ func TestClusterCostCoefficients(t *testing.T) {
 	var i int
 	for _, g := range cl.groups {
 		for _, u := range g.units {
-			assert.Equal(t, u.coefficients[0], cc[i])
-			assert.Equal(t, u.coefficients[1], cc[i+1])
-			assert.Equal(t, u.coefficients[2], cc[i+2])
-			assert.Equal(t, u.coefficients[3], cc[i+3])
+			assert.Equal(t, u.CostCoefficients()[0], cc[i])
+			assert.Equal(t, u.CostCoefficients()[1], cc[i+1])
+			assert.Equal(t, u.CostCoefficients()[2], cc[i+2])
+			assert.Equal(t, u.CostCoefficients()[3], cc[i+3])
 			i += u.ColumnSize()
 		}
 	}
@@ -66,12 +66,12 @@ func TestClusterConstraints2(t *testing.T) {
 func TestClusterConstraints3(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	inf := math.Inf(1)
-	a1 := NewUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
+	a1 := NewBasicUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
 	c1 := []float64{-1, 1, 0, 1, 0, 10}
 	a1.NewConstraint(c1)
 
 	pid2, _ := uuid.NewUUID()
-	a2 := NewUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
+	a2 := NewBasicUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
 	c2 := []float64{-2, 0, 2, 0, 2, 20}
 	a2.NewConstraint(c2)
 
@@ -120,7 +120,7 @@ func TestClusterBounds(t *testing.T) {
 func TestLinkbusConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	inf := math.Inf(1)
-	a1 := NewUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
+	a1 := NewBasicUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
 
 	ag1 := NewGroup(a1)
 	ag2 := NewGroup(a1)

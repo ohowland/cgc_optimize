@@ -14,9 +14,15 @@ func NewTestGroup() Group {
 	return NewGroup(a1, a2)
 }
 
+func NewPiecewiseTestGroup() Group {
+	a1 := NewTestPiecewiseUnit()
+	a2 := NewTestPiecewiseUnit()
+	return NewGroup(a1, a2)
+}
+
 func TestNewAssetVarsGroup(t *testing.T) {
 	ag0 := NewGroup()
-	assert.Equal(t, ag0.units, []BasicUnit{}, "empty group does not return empty units slice")
+	assert.Equal(t, ag0.units, []Unit{}, "empty group does not return empty units slice")
 
 	a1 := NewTestBasicUnit()
 	ag1 := NewGroup(a1)
@@ -147,4 +153,10 @@ func TestPositiveCapacityConstraint(t *testing.T) {
 	pcc := GroupPositiveCapacityConstraint(&ag1, pc)
 	inf := math.Inf(1)
 	assert.Equal(t, []float64{pc, 0, 0, 1, 0, 0, 0, 1, 0, inf}, pcc)
+}
+
+func TestCriticalPoints(t *testing.T) {
+	_ = NewPiecewiseTestGroup()
+
+	assert.Fail(t, "unimpemented")
 }

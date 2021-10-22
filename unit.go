@@ -14,8 +14,13 @@ type Unit interface {
 	Bounds() [][2]float64
 	Constraints() [][]float64
 	ColumnSize() int
+	Integrality() []int
+	CriticalPoints() []CriticalPoint
 
-	RealPower() float64
+	RealPositivePowerLoc() []int
+	RealNegativePowerLoc() []int
+	RealCapacityLoc() []int
+	StoredEnergyLoc() []int
 }
 
 type BasicUnit struct {
@@ -76,6 +81,15 @@ func (u BasicUnit) Constraints() [][]float64 {
 
 func (u BasicUnit) Bounds() [][2]float64 {
 	return u.bounds
+}
+
+func (u BasicUnit) Integrality() []int {
+	binaryIndex := make([]int, len(u.constraints))
+	return binaryIndex
+}
+
+func (u BasicUnit) CriticalPoints() []CriticalPoint {
+	return []CriticalPoint{}
 }
 
 func (u BasicUnit) RealPositivePowerLoc() []int {

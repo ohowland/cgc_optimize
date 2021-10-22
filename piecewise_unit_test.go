@@ -1,18 +1,21 @@
 package cgc_optimize
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNewPiecewiseUnit(t *testing.T) {
-
+func NewTestPiecewiseUnit() PiecewiseUnit {
 	pid, _ := uuid.NewUUID()
+	cp := []CriticalPoint{NewCriticalPoint(-10, 1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}
+	return NewPiecewiseUnit(pid, cp)
+}
 
-	cp := []CriticalPoint{CriticalPoint{-5, 0.8}, CriticalPoint{0, 0}, CriticalPoint{5, 1.2}}
-	pu := NewPiecewiseUnit(pid, cp)
+func TestNewPiecewiseUnit(t *testing.T) {
+	pu := NewTestPiecewiseUnit()
 
-	fmt.Println(pu)
+	assert.Equal(t, 5, pu.ColumnSize())
+
 }

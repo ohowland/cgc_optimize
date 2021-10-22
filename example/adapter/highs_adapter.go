@@ -22,6 +22,7 @@ func SolveLp(w opt.LinearProgram) []float64 {
 }
 
 func SolveMip(w opt.MipLinearProgram) []float64 {
+
 	s, err := highs.New(
 		w.CostCoefficients(),
 		w.Bounds(),

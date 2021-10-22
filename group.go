@@ -85,6 +85,14 @@ func (g Group) Bounds() [][2]float64 {
 	return b
 }
 
+func (g Group) Integrality() []int {
+	i := make([]int, 0)
+	for _, u := range g.units {
+		i = append(i, u.Integrality()...)
+	}
+	return i
+}
+
 func (g Group) RealPositivePowerLoc() []int {
 	loc := make([]int, 0)
 	i := 0
@@ -95,6 +103,15 @@ func (g Group) RealPositivePowerLoc() []int {
 		i += u.ColumnSize()
 	}
 	return loc
+}
+
+func (g Group) CriticalPoints() []CriticalPoint {
+	cp := make([]CriticalPoint, 0)
+	for _, u := range g.units {
+		cp = append(cp, u.CriticalPoints()...)
+	}
+
+	return cp
 }
 
 func (g Group) RealNegativePowerLoc() []int {
@@ -191,6 +208,18 @@ func NetLoadConstraint(g *Group, t_nl float64) []float64 {
 	}
 
 	return boundConstraint(c, t_nl, t_nl)
+}
+
+// NetLoadPiecewiseConstraint return a constraint of the form: Sum_i(x1+x2+...xn) == t_nl
+func NetLoadPiecewiseConstraint(g *Group, t_nl float64) []float64 {
+	c := make([]float64, g.ColumnSize())
+	locs := g.RealPositivePowerLoc()
+	cps := g.CriticalPoints()
+	for i, loc := range locs {
+		c[loc] = cps[i].Value()
+	}
+
+	return c
 }
 
 // GroupCapacityConstriant returns a constraint of the form: Sum_i(Xc_i) >= t_cap

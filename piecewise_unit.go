@@ -3,7 +3,6 @@ package cgc_optimize
 import (
 	"errors"
 	"fmt"
-	"math"
 
 	"github.com/google/uuid"
 )
@@ -13,7 +12,7 @@ type PiecewiseUnit struct {
 	coefficients   []float64
 	bounds         [][2]float64
 	constraints    [][]float64
-	binaries       []int
+	integrality    []int
 	criticalPoints []CriticalPoint
 }
 
@@ -22,11 +21,19 @@ type CriticalPoint struct {
 	cost float64
 }
 
+func NewCriticalPoint(val float64, cost float64) CriticalPoint {
+	return CriticalPoint{val, cost}
+}
+
+func (cp CriticalPoint) Value() float64 {
+	return cp.val
+}
+
+func (cp CriticalPoint) Cost() float64 {
+	return cp.cost
+}
+
 // NewPiecewiseUnit returns a configured unit struct.
-//
-// XpUb: Upper bound for real positive power decision variable
-// XnUb: Upper bound for real negative power decision variable (positive value)
-// XcUb: Upper bound for real capacity decision variable
 func NewPiecewiseUnit(pid uuid.UUID, C []CriticalPoint) PiecewiseUnit {
 
 	// Variable cost is split into continious segments described by critical points. Constraints are formed to allow
@@ -114,20 +121,53 @@ func (u PiecewiseUnit) Bounds() [][2]float64 {
 	return u.bounds
 }
 
+func (u PiecewiseUnit) Integrality() []int {
+	return u.integrality
+}
+
+func (u PiecewiseUnit) CriticalPoints() []CriticalPoint {
+	return u.criticalPoints
+}
+
 func (u PiecewiseUnit) RealPositivePowerLoc() []int {
-	return []int{0}
+	locs := make([]int, len(u.criticalPoints))
+	for i := range locs {
+		locs[i] = i
+	}
+
+	return locs
 }
 
 func (u PiecewiseUnit) RealNegativePowerLoc() []int {
-	return []int{1}
+	loc := make([]int, len(u.criticalPoints))
+	for i := range loc {
+		loc[i] = i
+	}
+
+	return loc
 }
 
 func (u PiecewiseUnit) RealCapacityLoc() []int {
-	return []int{2}
+	loc := make([]int, len(u.criticalPoints))
+	for i := range loc {
+		loc[i] = i
+	}
+
+	return loc
+}
+
+func (u PiecewiseUnit) StoredEnergyLoc() []int {
+	loc := make([]int, len(u.criticalPoints))
+	for i := range loc {
+		loc[i] = i
+	}
+
+	return loc
 }
 
 // Constraints
 
+/*
 func PiecewiseUnitCapacityConstraints(u *PiecewiseUnit) [][]float64 {
 	cx := make([][]float64, 0)
 	cx = append(cx, PiecewiseUnitPositiveCapacityConstraint(u))
@@ -158,3 +198,4 @@ func PiecewiseUnitNegativeCapacityConstraint(u *PiecewiseUnit) []float64 {
 	cn = boundConstraint(cn, 0, math.Inf(1))
 	return cn
 }
+*/
