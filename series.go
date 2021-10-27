@@ -22,8 +22,7 @@ type Sequencer interface {
 }
 
 type PowerLoc interface {
-	RealPositivePowerPidLoc(uuid.UUID) []int
-	RealNegativePowerPidLoc(uuid.UUID) []int
+	RealPowerPidLoc(uuid.UUID) []int
 }
 
 type StorageLoc interface {
@@ -97,24 +96,11 @@ func (se *Series) ColumnSize() int {
 	return s
 }
 
-func (se Series) RealPositivePowerPidLoc(t_pid uuid.UUID) []int {
+func (se Series) RealPowerPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, cl := range se.clusters {
-		for _, p := range cl.RealPositivePowerPidLoc(t_pid) {
-			loc = append(loc, p+i)
-		}
-		i += cl.ColumnSize()
-	}
-
-	return loc
-}
-
-func (se Series) RealNegativePowerPidLoc(t_pid uuid.UUID) []int {
-	loc := make([]int, 0)
-	i := 0
-	for _, cl := range se.clusters {
-		for _, p := range cl.RealNegativePowerPidLoc(t_pid) {
+		for _, p := range cl.RealPowerPidLoc(t_pid) {
 			loc = append(loc, p+i)
 		}
 		i += cl.ColumnSize()
@@ -148,15 +134,13 @@ func BatteryInitialEnergyConstraint(t_se *Series, t_pid uuid.UUID, t_e float64) 
 
 // BatteryEnergyConstraint returns a constraint of the form: e_ti - (p_ti-n_ti)*t = e_t(i+1)
 func BatteryEnergyConstraint(t_se *Series, t_pid uuid.UUID, t_tstep float64) [][]float64 {
-	pLoc := t_se.RealPositivePowerPidLoc(t_pid)
-	nLoc := t_se.RealNegativePowerPidLoc(t_pid)
+	pLoc := t_se.RealPowerPidLoc(t_pid)
 	eLoc := t_se.StoredEnergyPidLoc(t_pid)
 
 	cx := make([][]float64, 0)
 	for i := 0; i < len(eLoc)-1; i++ {
 		c := make([]float64, t_se.ColumnSize())
 		c[pLoc[i]] = -t_tstep
-		c[nLoc[i]] = t_tstep
 		c[eLoc[i]] = 1
 		c[eLoc[i+1]] = -1
 		c = boundConstraint(c, 0, 0)

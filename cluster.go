@@ -78,24 +78,11 @@ func (cl *Cluster) NewConstraint(t_c ...[]float64) error {
 	return nil
 }
 
-func (cl Cluster) RealPositivePowerPidLoc(t_pid uuid.UUID) []int {
+func (cl Cluster) RealPowerPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, g := range cl.groups {
-		for _, p := range g.RealPositivePowerPidLoc(t_pid) {
-			loc = append(loc, p+i)
-		}
-		i += g.ColumnSize()
-	}
-
-	return loc
-}
-
-func (cl Cluster) RealNegativePowerPidLoc(t_pid uuid.UUID) []int {
-	loc := make([]int, 0)
-	i := 0
-	for _, g := range cl.groups {
-		for _, p := range g.RealNegativePowerPidLoc(t_pid) {
+		for _, p := range g.RealPowerPidLoc(t_pid) {
 			loc = append(loc, p+i)
 		}
 		i += g.ColumnSize()
@@ -119,6 +106,7 @@ func (cl Cluster) StoredEnergyPidLoc(t_pid uuid.UUID) []int {
 
 // Cluster Specific Constraints
 
+/*
 func LinkedBusConstraints(t_cl *Cluster, t_pid uuid.UUID) [][]float64 {
 	pLoc := t_cl.RealPositivePowerPidLoc(t_pid) // location of Positive Real Power decision variables
 	nLoc := t_cl.RealNegativePowerPidLoc(t_pid) // location of Negative Real Power decision variables
@@ -142,3 +130,4 @@ func LinkedBusConstraints(t_cl *Cluster, t_pid uuid.UUID) [][]float64 {
 
 	return c
 }
+*/

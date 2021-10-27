@@ -80,8 +80,8 @@ func buildBounds(c []CriticalPoint) [][2]float64 {
 		bounds = append(bounds, [2]float64{0, 1})
 	}
 
-	// capacity bounds
-	bounds = append(bounds, [2]float64{0, 1})
+	// positive and negative capacity bounds
+	bounds = append(bounds, [][2]float64{{0, 1}, {0, 1}}...)
 
 	return bounds
 }
@@ -202,13 +202,59 @@ func (u BasicUnit) RealPowerLoc() []int {
 }
 
 func (u BasicUnit) RealPositiveCapacityLoc() []int {
-	loc := []int{len(u.criticalPoints) * 2}
+	loc := []int{len(u.criticalPoints)*2 - 1}
 
 	return loc
 }
 
 func (u BasicUnit) RealNegativeCapacityLoc() []int {
-	loc := []int{len(u.criticalPoints)*2 + 1}
+	loc := []int{len(u.criticalPoints) * 2}
 
 	return loc
+}
+
+// Constraints
+
+func UnitRealPowerConstraint(u *BasicUnit, setpt float64) []float64 {
+	rpl := u.RealPowerLoc()
+	cp := u.CriticalPoints()
+
+	c := make([]float64, u.ColumnSize())
+	for i, loc := range rpl {
+		c[loc] = cp[i].KW()
+	}
+
+	return boundConstraint(c, setpt, setpt)
+}
+
+func UnitPositiveCapacityConstraint(u *BasicUnit, pCap float64) []float64 {
+	rpl := u.RealPowerLoc()
+	cp := u.CriticalPoints()
+	pcl := u.RealPositiveCapacityLoc()[0]
+
+	c := make([]float64, u.ColumnSize())
+	for i, loc := range rpl {
+		c[loc] = cp[i].KW()
+	}
+
+	c[pcl] = -pCap
+
+	c = boundConstraint(c, math.Inf(-1), 0)
+	return c
+}
+
+func UnitNegativeCapacityConstraint(u *BasicUnit, nCap float64) []float64 {
+	rpl := u.RealPowerLoc()
+	cp := u.CriticalPoints()
+	pcl := u.RealNegativeCapacityLoc()[0]
+
+	c := make([]float64, u.ColumnSize())
+	for i, loc := range rpl {
+		c[loc] = cp[i].KW()
+	}
+
+	c[pcl] = nCap
+
+	c = boundConstraint(c, 0, math.Inf(1))
+	return c
 }

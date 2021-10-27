@@ -22,9 +22,8 @@ func NewTestSeries(n int) Series {
 func TestSeriesCostCoefficients(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	inf := math.Inf(1)
-	a1 := NewBasicUnit(pid1, 1, 2, 3, 4, inf, inf, inf, inf)
-	a2 := NewBasicUnit(pid2, 5, 6, 7, 8, inf, inf, inf, inf)
+	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)})
+	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)})
 	g := NewGroup(a1, a2)
 	cl := NewCluster(g)
 	s := NewSeries(cl, cl)
@@ -61,9 +60,8 @@ func TestSeriesBounds(t *testing.T) {
 func TestSeriesBatteryEnergyConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	inf := math.Inf(1)
-	a1 := NewBasicUnit(pid1, 1, 2, 3, 4, inf, inf, inf, inf)
-	a2 := NewBasicUnit(pid2, 5, 6, 7, 8, inf, inf, inf, inf)
+	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)})
+	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)})
 	g := NewGroup(a1, a2)
 	cl := NewCluster(g)
 	s := NewSeries(cl, cl, cl)
