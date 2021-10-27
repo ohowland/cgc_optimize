@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type PiecewiseUnit struct {
+type BasicUnit struct {
 	pid            uuid.UUID
 	coefficients   []float64
 	bounds         [][2]float64
@@ -19,28 +19,28 @@ type PiecewiseUnit struct {
 }
 
 type CriticalPoint struct {
-	val  float64
-	cost float64
+	kw         float64
+	costPerKwh float64
 }
 
-func NewCriticalPoint(val float64, cost float64) CriticalPoint {
-	return CriticalPoint{val, cost}
+func NewCriticalPoint(kw float64, costPerKwh float64) CriticalPoint {
+	return CriticalPoint{kw, costPerKwh}
 }
 
-func (cp CriticalPoint) Value() float64 {
-	return cp.val
+func (cp CriticalPoint) KW() float64 {
+	return cp.kw
 }
 
-func (cp CriticalPoint) Cost() float64 {
-	return cp.cost
+func (cp CriticalPoint) CostPerKWH() float64 {
+	return cp.costPerKwh
 }
 
-// NewPiecewiseUnit returns a configured unit struct.
-func NewPiecewiseUnit(pid uuid.UUID, c []CriticalPoint) PiecewiseUnit {
+// NewBasicUnit returns a configured unit struct.
+func NewBasicUnit(pid uuid.UUID, c []CriticalPoint) BasicUnit {
 
 	// order critical points ascending.
 	sort.Slice(c, func(i, j int) bool {
-		return (c[i].val < c[j].val)
+		return (c[i].kw < c[j].kw)
 	})
 
 	coefficients := buildCoefficients(c)
@@ -48,7 +48,7 @@ func NewPiecewiseUnit(pid uuid.UUID, c []CriticalPoint) PiecewiseUnit {
 	binaryMask := buildBinaryMask(c, len(coefficients))
 	constraints := buildConstraints(c, len(coefficients))
 
-	return PiecewiseUnit{pid, coefficients, bounds, constraints, binaryMask, c}
+	return BasicUnit{pid, coefficients, bounds, constraints, binaryMask, c}
 }
 
 func buildCoefficients(c []CriticalPoint) []float64 {
@@ -56,11 +56,14 @@ func buildCoefficients(c []CriticalPoint) []float64 {
 	// only one segement to be active at a time (i.e. the line between two critical points).
 	coefficients := []float64{}
 	for _, cp := range c {
-		coefficients = append(coefficients, cp.cost)
+		coefficients = append(coefficients, cp.costPerKwh)
 	}
 
 	binaryCoeff := make([]float64, len(c)-1)
 	coefficients = append(coefficients, binaryCoeff...)
+
+	capacityCoeff := make([]float64, 2)
+	coefficients = append(coefficients, capacityCoeff...)
 
 	return coefficients
 }
@@ -77,13 +80,16 @@ func buildBounds(c []CriticalPoint) [][2]float64 {
 		bounds = append(bounds, [2]float64{0, 1})
 	}
 
+	// capacity bounds
+	bounds = append(bounds, [2]float64{0, 1})
+
 	return bounds
 }
 
 // buildBinaryMask returns a binary integer slice masking the integer decision variables
 func buildBinaryMask(c []CriticalPoint, l int) []int {
 	mask := make([]int, l)
-	for i := len(c); i < l; i++ {
+	for i := len(c); i < len(c)*2-1; i++ {
 		mask[i] = 1
 	}
 
@@ -143,19 +149,19 @@ func buildConstraints(c []CriticalPoint, l int) [][]float64 {
 	return constraints
 }
 
-func (u PiecewiseUnit) PID() uuid.UUID {
+func (u BasicUnit) PID() uuid.UUID {
 	return u.pid
 }
 
-func (u PiecewiseUnit) CostCoefficients() []float64 {
+func (u BasicUnit) CostCoefficients() []float64 {
 	return u.coefficients
 }
 
-func (u PiecewiseUnit) ColumnSize() int {
+func (u BasicUnit) ColumnSize() int {
 	return len(u.coefficients)
 }
 
-func (u *PiecewiseUnit) NewConstraint(t_c ...[]float64) error {
+func (u *BasicUnit) NewConstraint(t_c ...[]float64) error {
 	cx := make([][]float64, 0)
 	for _, c := range t_c {
 		if len(c) != u.ColumnSize()+2 {
@@ -170,23 +176,23 @@ func (u *PiecewiseUnit) NewConstraint(t_c ...[]float64) error {
 	return nil
 }
 
-func (u PiecewiseUnit) Constraints() [][]float64 {
+func (u BasicUnit) Constraints() [][]float64 {
 	return u.constraints
 }
 
-func (u PiecewiseUnit) Bounds() [][2]float64 {
+func (u BasicUnit) Bounds() [][2]float64 {
 	return u.bounds
 }
 
-func (u PiecewiseUnit) Integrality() []int {
+func (u BasicUnit) Integrality() []int {
 	return u.integrality
 }
 
-func (u PiecewiseUnit) CriticalPoints() []CriticalPoint {
+func (u BasicUnit) CriticalPoints() []CriticalPoint {
 	return u.criticalPoints
 }
 
-func (u PiecewiseUnit) RealPositivePowerLoc() []int {
+func (u BasicUnit) RealPowerLoc() []int {
 	locs := make([]int, len(u.criticalPoints))
 	for i := range locs {
 		locs[i] = i
@@ -195,64 +201,14 @@ func (u PiecewiseUnit) RealPositivePowerLoc() []int {
 	return locs
 }
 
-func (u PiecewiseUnit) RealNegativePowerLoc() []int {
-	loc := make([]int, len(u.criticalPoints))
-	for i := range loc {
-		loc[i] = i
-	}
+func (u BasicUnit) RealPositiveCapacityLoc() []int {
+	loc := []int{len(u.criticalPoints) * 2}
 
 	return loc
 }
 
-func (u PiecewiseUnit) RealCapacityLoc() []int {
-	loc := make([]int, len(u.criticalPoints))
-	for i := range loc {
-		loc[i] = i
-	}
+func (u BasicUnit) RealNegativeCapacityLoc() []int {
+	loc := []int{len(u.criticalPoints)*2 + 1}
 
 	return loc
 }
-
-func (u PiecewiseUnit) StoredEnergyLoc() []int {
-	loc := make([]int, len(u.criticalPoints))
-	for i := range loc {
-		loc[i] = i
-	}
-
-	return loc
-}
-
-// Constraints
-
-/*
-func PiecewiseUnitCapacityConstraints(u *PiecewiseUnit) [][]float64 {
-	cx := make([][]float64, 0)
-	cx = append(cx, PiecewiseUnitPositiveCapacityConstraint(u))
-	cx = append(cx, PiecewiseUnitNegativeCapacityConstraint(u))
-	return cx
-}
-
-func PiecewiseUnitPositiveCapacityConstraint(u *PiecewiseUnit) []float64 {
-	xp := u.RealPositivePowerLoc()[0]
-	xc := u.RealCapacityLoc()[0]
-
-	cp := make([]float64, u.ColumnSize())
-	cp[xp] = -1
-	cp[xc] = 1
-
-	cp = boundConstraint(cp, 0, math.Inf(1))
-	return cp
-}
-
-func PiecewiseUnitNegativeCapacityConstraint(u *PiecewiseUnit) []float64 {
-	xn := u.RealNegativePowerLoc()[0]
-	xc := u.RealCapacityLoc()[0]
-
-	cn := make([]float64, u.ColumnSize())
-	cn[xn] = -1
-	cn[xc] = 1
-
-	cn = boundConstraint(cn, 0, math.Inf(1))
-	return cn
-}
-*/

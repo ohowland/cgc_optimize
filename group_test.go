@@ -14,12 +14,6 @@ func NewTestGroup() Group {
 	return NewGroup(a1, a2)
 }
 
-func NewPiecewiseTestGroup() Group {
-	a1 := NewTestPiecewiseUnit()
-	a2 := NewTestPiecewiseUnit()
-	return NewGroup(a1, a2)
-}
-
 func TestNewAssetVarsGroup(t *testing.T) {
 	ag0 := NewGroup()
 	assert.Equal(t, ag0.units, []Unit{}, "empty group does not return empty units slice")
@@ -57,9 +51,9 @@ func TestGetGroupColumnsSize(t *testing.T) {
 func TestNewGroupConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	inf := math.Inf(1)
-	a1 := NewBasicUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
-	a2 := NewBasicUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
+
+	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)})
+	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(0, 0), NewCriticalPoint(5, 1), NewCriticalPoint(15, 5)})
 	ag1 := NewGroup(a1, a2)
 
 	c := []float64{0.0, -1.0, 0, 1.0, 0, 1.0, 0.2, 2.1, 1.1, 1.0}
@@ -72,12 +66,12 @@ func TestNewGroupConstraint(t *testing.T) {
 func TestGroupUnitConstraints(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
-	inf := math.Inf(1)
-	a1 := NewBasicUnit(pid1, 1.0, 2.0, 3.0, 4.0, inf, inf, inf, inf)
+
+	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)})
 	a1c := []float64{-10, 1.0, 0.0, 1.0, 0.0, 10}
 	a1.NewConstraint(a1c)
 
-	a2 := NewBasicUnit(pid2, 5.0, 6.0, 7.0, 8.0, inf, inf, inf, inf)
+	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(0, 0), NewCriticalPoint(5, 1), NewCriticalPoint(15, 5)})
 	a2c := []float64{-20, 0.0, 2.0, 0.0, 2.0, 20}
 	a2.NewConstraint(a2c)
 
@@ -117,19 +111,19 @@ func TestGroupBounds(t *testing.T) {
 
 func TestLocateGroupRealPositivePower(t *testing.T) {
 	ag1 := NewTestGroup()
-	loc := ag1.RealPositivePowerLoc()
+	loc := ag1.RealPowerLoc()
 	assert.Equal(t, []int{0, 4}, loc)
 }
 
-func TestLocateGroupRealNegativePower(t *testing.T) {
+func TestLocateRealPositiveCapacity(t *testing.T) {
 	ag1 := NewTestGroup()
-	loc := ag1.RealNegativePowerLoc()
-	assert.Equal(t, []int{1, 5}, loc)
+	loc := ag1.RealPositiveCapacityLoc()
+	assert.Equal(t, []int{2, 6}, loc)
 }
 
-func TestLocateRealCapacity(t *testing.T) {
+func TestLocateRealNegativeCapacity(t *testing.T) {
 	ag1 := NewTestGroup()
-	loc := ag1.RealCapacityLoc()
+	loc := ag1.RealPositiveCapacityLoc()
 	assert.Equal(t, []int{2, 6}, loc)
 }
 
@@ -153,10 +147,4 @@ func TestPositiveCapacityConstraint(t *testing.T) {
 	pcc := GroupPositiveCapacityConstraint(&ag1, pc)
 	inf := math.Inf(1)
 	assert.Equal(t, []float64{pc, 0, 0, 1, 0, 0, 0, 1, 0, inf}, pcc)
-}
-
-func TestCriticalPoints(t *testing.T) {
-	_ = NewPiecewiseTestGroup()
-
-	assert.Fail(t, "unimpemented")
 }

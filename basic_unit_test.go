@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func NewTestPiecewiseUnit() PiecewiseUnit {
+func NewTestBasicUnit() BasicUnit {
 	pid, _ := uuid.NewUUID()
 	cp := []CriticalPoint{NewCriticalPoint(-10, 1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}
-	return NewPiecewiseUnit(pid, cp)
+	return NewBasicUnit(pid, cp)
 }
 
-func TestNewPiecewiseUnit(t *testing.T) {
-	pu := NewTestPiecewiseUnit()
+func TestNewBasicUnit(t *testing.T) {
+	pu := NewTestBasicUnit()
 
 	assert.Equal(t, 5, pu.ColumnSize())
 

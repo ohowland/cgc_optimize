@@ -93,32 +93,19 @@ func (g Group) Integrality() []int {
 	return i
 }
 
-func (g Group) RealPositivePowerLoc() []int {
-	loc := make([]int, 0)
-	i := 0
-	for _, u := range g.units {
-		for _, p := range u.RealPositivePowerLoc() {
-			loc = append(loc, p+i)
-		}
-		i += u.ColumnSize()
-	}
-	return loc
-}
-
 func (g Group) CriticalPoints() []CriticalPoint {
 	cp := make([]CriticalPoint, 0)
 	for _, u := range g.units {
 		cp = append(cp, u.CriticalPoints()...)
 	}
-
 	return cp
 }
 
-func (g Group) RealNegativePowerLoc() []int {
+func (g Group) RealPowerLoc() []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, u := range g.units {
-		for _, p := range u.RealNegativePowerLoc() {
+		for _, p := range u.RealPowerLoc() {
 			loc = append(loc, p+i)
 		}
 		i += u.ColumnSize()
@@ -126,11 +113,23 @@ func (g Group) RealNegativePowerLoc() []int {
 	return loc
 }
 
-func (g Group) RealCapacityLoc() []int {
+func (g Group) RealPositiveCapacityLoc() []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, u := range g.units {
-		for _, p := range u.RealCapacityLoc() {
+		for _, p := range u.RealPositiveCapacityLoc() {
+			loc = append(loc, p+i)
+		}
+		i += u.ColumnSize()
+	}
+	return loc
+}
+
+func (g Group) RealNegativeCapacityLoc() []int {
+	loc := make([]int, 0)
+	i := 0
+	for _, u := range g.units {
+		for _, p := range u.RealPositiveCapacityLoc() {
 			loc = append(loc, p+i)
 		}
 		i += u.ColumnSize()
@@ -142,34 +141,24 @@ func (g Group) StoredEnergyLoc() []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, u := range g.units {
-		for _, p := range u.StoredEnergyLoc() {
-			loc = append(loc, p+i)
-		}
-		i += u.ColumnSize()
-	}
-	return loc
-}
-
-func (g Group) RealPositivePowerPidLoc(t_pid uuid.UUID) []int {
-	loc := make([]int, 0)
-	i := 0
-	for _, u := range g.units {
-		if u.PID() == t_pid {
-			for _, p := range u.RealPositivePowerLoc() {
+		switch v := u.(type) {
+		case EnergyStorageUnit:
+			for _, p := range v.StoredEnergyLoc() {
 				loc = append(loc, p+i)
 			}
+		default:
 		}
 		i += u.ColumnSize()
 	}
 	return loc
 }
 
-func (g Group) RealNegativePowerPidLoc(t_pid uuid.UUID) []int {
+func (g Group) RealPowerPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, u := range g.units {
 		if u.PID() == t_pid {
-			for _, p := range u.RealNegativePowerLoc() {
+			for _, p := range u.RealPowerLoc() {
 				loc = append(loc, p+i)
 			}
 		}
@@ -182,52 +171,51 @@ func (g Group) StoredEnergyPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, u := range g.units {
-		if u.PID() == t_pid {
-			for _, p := range u.StoredEnergyLoc() {
-				loc = append(loc, p+i)
+		switch v := u.(type) {
+		case EnergyStorageUnit:
+			if u.PID() == t_pid {
+				for _, p := range v.StoredEnergyLoc() {
+					loc = append(loc, p+i)
+				}
 			}
+			i += u.ColumnSize()
+		default:
 		}
-		i += u.ColumnSize()
+
 	}
 	return loc
 }
 
 // Constraint Generation
 
-// NetLoadConstraint returns a constraint of the form: Sum_i(Xp_i - Xn_i) == t_nl
+// NetLoadPiecewiseConstraint return a constraint of the form: Sum_i(x1+x2+...xn) == t_nl
 func NetLoadConstraint(g *Group, t_nl float64) []float64 {
 	c := make([]float64, g.ColumnSize())
 
-	rpp := g.RealPositivePowerLoc()
-	rnp := g.RealNegativePowerLoc()
-	for _, i := range rpp {
-		c[i] = 1.0
-	}
-	for _, i := range rnp {
-		c[i] = -1.0
-	}
-
-	return boundConstraint(c, t_nl, t_nl)
-}
-
-// NetLoadPiecewiseConstraint return a constraint of the form: Sum_i(x1+x2+...xn) == t_nl
-func NetLoadPiecewiseConstraint(g *Group, t_nl float64) []float64 {
-	c := make([]float64, g.ColumnSize())
-
-	locs := g.RealPositivePowerLoc()
+	rpl := g.RealPowerLoc() // RealNegativePowerLoc would return same value.
 	cps := g.CriticalPoints()
-	for i, loc := range locs {
-		c[loc] = cps[i].Value()
+	for i, loc := range rpl {
+		c[loc] = cps[i].KW()
 	}
 
 	return boundConstraint(c, t_nl, t_nl)
 }
 
-// GroupCapacityConstriant returns a constraint of the form: Sum_i(Xc_i) >= t_cap
+// GroupPositiveCapacityConstriant returns a constraint of the form: Sum_i(Xc_i) >= t_cap
 func GroupPositiveCapacityConstraint(g *Group, t_cap float64) []float64 {
 	c := make([]float64, g.ColumnSize())
+	pc := g.RealPositiveCapacityLoc()
+	for _, i := range pc {
+		c[i] = 1.0
+	}
 
-	pc := g.RealCapacityLoc()
+	return boundConstraint(c, t_cap, math.Inf(1))
+}
+
+// GroupNegativeCapacityConstriant returns a constraint of the form: Sum_i(Xc_i) >= t_cap
+func GroupNegativeCapacityConstraint(g *Group, t_cap float64) []float64 {
+	c := make([]float64, g.ColumnSize())
+	pc := g.RealNegativeCapacityLoc()
 	for _, i := range pc {
 		c[i] = 1.0
 	}
