@@ -1,7 +1,6 @@
 package adapter
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 
@@ -24,19 +23,38 @@ func TestHighsEssLpNetLoadConstraint(t *testing.T) {
 	assert.InDeltaSlice(t, []float64{5, 0, 0, 0, 5, 0, 0, 0}, sol, 0.1)
 }
 
-func TestHighsPiecewise(t *testing.T) {
+func TestHighsPiecewiseSingleAsset(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	a1 := opt.NewPiecewiseUnit(pid1, []opt.CriticalPoint{opt.NewCriticalPoint(-10, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 1)})
 	ag1 := opt.NewGroup(a1)
 
+	nlc := opt.NetLoadPiecewiseConstraint(&ag1, 5)
+	ag1.NewConstraint(nlc)
+
+	sol := SolveMip(ag1)
+	//fmt.Println("cost coeff:", ag1.CostCoefficients())
+	//fmt.Println("crit pts:", ag1.CriticalPoints())
+	//fmt.Println("binary mask:", ag1.Integrality())
+	//fmt.Println("bounds:", ag1.Bounds())
+	//fmt.Println("constraints:", ag1.Constraints())
+	//fmt.Println("solution:", sol)
+	assert.InDeltaSlice(t, []float64{0, 0, 0.5, 0, 1}, sol, 0.1)
+}
+
+func TestHighsPiecewiseTwoAssets(t *testing.T) {
+	pid1, _ := uuid.NewUUID()
+	a1 := opt.NewPiecewiseUnit(pid1, []opt.CriticalPoint{opt.NewCriticalPoint(-10, 3), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 3)})
+
+	pid2, _ := uuid.NewUUID()
+	a2 := opt.NewPiecewiseUnit(pid2, []opt.CriticalPoint{opt.NewCriticalPoint(-5, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(5, 1)})
+
+	ag1 := opt.NewGroup(a1, a2)
 	nlc := opt.NetLoadPiecewiseConstraint(&ag1, 10)
 	ag1.NewConstraint(nlc)
 
-	fmt.Println(ag1)
+	sol := SolveMip(ag1)
 
-	_ = SolveMip(ag1)
-	//assert.InDeltaSlice(t, []float64{5, 0, 0, 0, 5, 0, 0, 0}, sol, 0.1)
-	assert.FailNow(t, "not impemented")
+	assert.InDeltaSlice(t, []float64{0, 0, 0.5, 0, 1, 0, 0, 1, 0, 1}, sol, 0.1)
 }
 
 func TestHighsEssLpAssetCapacityConstraint(t *testing.T) {

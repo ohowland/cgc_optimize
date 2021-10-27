@@ -213,13 +213,14 @@ func NetLoadConstraint(g *Group, t_nl float64) []float64 {
 // NetLoadPiecewiseConstraint return a constraint of the form: Sum_i(x1+x2+...xn) == t_nl
 func NetLoadPiecewiseConstraint(g *Group, t_nl float64) []float64 {
 	c := make([]float64, g.ColumnSize())
+
 	locs := g.RealPositivePowerLoc()
 	cps := g.CriticalPoints()
 	for i, loc := range locs {
 		c[loc] = cps[i].Value()
 	}
 
-	return c
+	return boundConstraint(c, t_nl, t_nl)
 }
 
 // GroupCapacityConstriant returns a constraint of the form: Sum_i(Xc_i) >= t_cap

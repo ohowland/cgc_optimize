@@ -3,6 +3,7 @@ package cgc_optimize
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/google/uuid"
 )
@@ -36,6 +37,8 @@ func (cp CriticalPoint) Cost() float64 {
 // NewPiecewiseUnit returns a configured unit struct.
 func NewPiecewiseUnit(pid uuid.UUID, C []CriticalPoint) PiecewiseUnit {
 
+	// TODO: order critical points ascending.
+
 	// Variable cost is split into continious segments described by critical points. Constraints are formed to allow
 	// only one segement to be active at a time (i.e. the line between two critical points).
 	coefficients := []float64{}
@@ -46,14 +49,17 @@ func NewPiecewiseUnit(pid uuid.UUID, C []CriticalPoint) PiecewiseUnit {
 	binaryCoeff := make([]float64, len(C)-1)
 	coefficients = append(coefficients, binaryCoeff...)
 
-	// set bounds on segment decision variables
+	// set bounds on segment decision variables equal to critical point power value (val)
 	bounds := [][2]float64{}
 	for i := 0; i < len(C); i++ {
-		if C[i].val >= 0 {
-			bounds = append(bounds, [2]float64{0, C[i].val})
-		} else {
-			bounds = append(bounds, [2]float64{C[i].val, 0})
-		}
+		/*
+			if C[i].val >= 0 {
+				bounds = append(bounds, [2]float64{0, C[i].val})
+			} else {
+				bounds = append(bounds, [2]float64{C[i].val, 0})
+			}
+		*/
+		bounds = append(bounds, [2]float64{0, math.Inf(1)})
 	}
 
 	// set bounds on binary decision vairables
@@ -80,8 +86,24 @@ func NewPiecewiseUnit(pid uuid.UUID, C []CriticalPoint) PiecewiseUnit {
 			constraint[i+len(C)-1] = -1
 		}
 
-		constraints = append(constraints, constraint)
+		constraints = append(constraints, boundConstraint(constraint, math.Inf(-1), 0))
 	}
+
+	// segment interpolation constraint
+	// [0, 1, 1, 1, 0, 0, 1]
+	constraint := make([]float64, len(coefficients))
+	for i := range C {
+		constraint[i] = 1
+	}
+	constraints = append(constraints, boundConstraint(constraint, 0, 1))
+
+	// segment activation constraint
+	// [0, 0, 0, 0, 1, 1, 1]
+	constraint = make([]float64, len(coefficients))
+	for i := len(C); i < len(coefficients); i++ {
+		constraint[i] = 1
+	}
+	constraints = append(constraints, boundConstraint(constraint, 0, 1))
 
 	return PiecewiseUnit{pid, coefficients, bounds, constraints, binaryIndex, C}
 }
