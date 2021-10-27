@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -38,7 +39,7 @@ func TestHighsPiecewiseSingleAsset(t *testing.T) {
 	//fmt.Println("bounds:", ag1.Bounds())
 	//fmt.Println("constraints:", ag1.Constraints())
 	//fmt.Println("solution:", sol)
-	assert.InDeltaSlice(t, []float64{0, 0, 0.5, 0, 1}, sol, 0.1)
+	assert.InDeltaSlice(t, []float64{0, 0.5, 0.5, 0, 1}, sol, 0.1)
 }
 
 func TestHighsPiecewiseTwoAssets(t *testing.T) {
@@ -53,8 +54,8 @@ func TestHighsPiecewiseTwoAssets(t *testing.T) {
 	ag1.NewConstraint(nlc)
 
 	sol := SolveMip(ag1)
-
-	assert.InDeltaSlice(t, []float64{0, 0, 0.5, 0, 1, 0, 0, 1, 0, 1}, sol, 0.1)
+	fmt.Println("solution:", sol)
+	assert.InDeltaSlice(t, []float64{0, 0.5, 0.5, 0, 1, 0, 0, 1, 0, 1}, sol, 0.1)
 }
 
 func TestHighsEssLpAssetCapacityConstraint(t *testing.T) {

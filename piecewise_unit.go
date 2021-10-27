@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/google/uuid"
 )
@@ -35,77 +36,111 @@ func (cp CriticalPoint) Cost() float64 {
 }
 
 // NewPiecewiseUnit returns a configured unit struct.
-func NewPiecewiseUnit(pid uuid.UUID, C []CriticalPoint) PiecewiseUnit {
+func NewPiecewiseUnit(pid uuid.UUID, c []CriticalPoint) PiecewiseUnit {
 
-	// TODO: order critical points ascending.
+	// order critical points ascending.
+	sort.Slice(c, func(i, j int) bool {
+		return (c[i].val < c[j].val)
+	})
 
+	coefficients := buildCoefficients(c)
+	bounds := buildBounds(c)
+	binaryMask := buildBinaryMask(c, len(coefficients))
+	constraints := buildConstraints(c, len(coefficients))
+
+	return PiecewiseUnit{pid, coefficients, bounds, constraints, binaryMask, c}
+}
+
+func buildCoefficients(c []CriticalPoint) []float64 {
 	// Variable cost is split into continious segments described by critical points. Constraints are formed to allow
 	// only one segement to be active at a time (i.e. the line between two critical points).
 	coefficients := []float64{}
-	for _, cp := range C {
+	for _, cp := range c {
 		coefficients = append(coefficients, cp.cost)
 	}
 
-	binaryCoeff := make([]float64, len(C)-1)
+	binaryCoeff := make([]float64, len(c)-1)
 	coefficients = append(coefficients, binaryCoeff...)
 
-	// set bounds on segment decision variables equal to critical point power value (val)
+	return coefficients
+}
+
+func buildBounds(c []CriticalPoint) [][2]float64 {
+
 	bounds := [][2]float64{}
-	for i := 0; i < len(C); i++ {
-		/*
-			if C[i].val >= 0 {
-				bounds = append(bounds, [2]float64{0, C[i].val})
-			} else {
-				bounds = append(bounds, [2]float64{C[i].val, 0})
-			}
-		*/
+	for i := 0; i < len(c); i++ {
 		bounds = append(bounds, [2]float64{0, math.Inf(1)})
 	}
 
 	// set bounds on binary decision vairables
-	for i := len(C); i < len(coefficients); i++ {
+	for i := 0; i < len(c)-1; i++ {
 		bounds = append(bounds, [2]float64{0, 1})
 	}
 
-	// mask binary decision variables
-	binaryIndex := make([]int, len(coefficients))
-	for i := len(C); i < len(coefficients); i++ {
-		binaryIndex[i] = 1
+	return bounds
+}
+
+// buildBinaryMask returns a binary integer slice masking the integer decision variables
+func buildBinaryMask(c []CriticalPoint, l int) []int {
+	mask := make([]int, l)
+	for i := len(c); i < l; i++ {
+		mask[i] = 1
 	}
 
-	// create segment constraints, this is a diagonal matrix
+	return mask
+}
+
+// buildConstraintsSegement creates a lower diagonal matrix
+func buildConstraintsSegment(c []CriticalPoint, l int) [][]float64 {
 	constraints := [][]float64{}
-	for i := range C {
-		constraint := make([]float64, len(coefficients))
+	for i := range c {
+		constraint := make([]float64, l)
 		constraint[i] = 1
 
-		if i < len(C)-1 {
-			constraint[i+len(C)] = -1
+		if i < len(c)-1 {
+			constraint[i+len(c)] = -1
 		}
+
 		if i > 0 {
-			constraint[i+len(C)-1] = -1
+			constraint[i+len(c)-1] = -1
 		}
 
 		constraints = append(constraints, boundConstraint(constraint, math.Inf(-1), 0))
 	}
 
+	return constraints
+}
+
+func buildConstraintsInterpolation(c []CriticalPoint, l int) []float64 {
 	// segment interpolation constraint
 	// [0, 1, 1, 1, 0, 0, 1]
-	constraint := make([]float64, len(coefficients))
-	for i := range C {
+	constraint := make([]float64, l)
+	for i := range c {
 		constraint[i] = 1
 	}
-	constraints = append(constraints, boundConstraint(constraint, 0, 1))
+
+	return boundConstraint(constraint, 1, 1)
+}
+
+func buildConstraintsActivation(c []CriticalPoint, l int) []float64 {
 
 	// segment activation constraint
 	// [0, 0, 0, 0, 1, 1, 1]
-	constraint = make([]float64, len(coefficients))
-	for i := len(C); i < len(coefficients); i++ {
+	constraint := make([]float64, l)
+	for i := len(c); i < l; i++ {
 		constraint[i] = 1
 	}
-	constraints = append(constraints, boundConstraint(constraint, 0, 1))
 
-	return PiecewiseUnit{pid, coefficients, bounds, constraints, binaryIndex, C}
+	return boundConstraint(constraint, 1, 1)
+}
+
+func buildConstraints(c []CriticalPoint, l int) [][]float64 {
+
+	constraints := buildConstraintsSegment(c, l)
+	constraints = append(constraints, buildConstraintsInterpolation(c, l))
+	constraints = append(constraints, buildConstraintsActivation(c, l))
+
+	return constraints
 }
 
 func (u PiecewiseUnit) PID() uuid.UUID {
