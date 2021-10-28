@@ -1,14 +1,6 @@
 package adapter
 
-import (
-	"math/rand"
-	"testing"
-
-	"github.com/google/uuid"
-	opt "github.com/ohowland/cgc_optimize"
-	"github.com/stretchr/testify/assert"
-)
-
+/*
 func TestEssLpNetLoadConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
@@ -125,3 +117,4 @@ func TestEssLpSeriesChargeBatteryConstraint(t *testing.T) {
 	sol := Solve(s1)
 	assert.InDeltaSlice(t, []float64{0, 10, 10, 5, 0, 10, 10, 10, 0, 10, 10, 15, 0, 10, 10, 20}, sol, 0.1, "battery negative power not increasing stored energy")
 }
+*/

@@ -52,8 +52,16 @@ func TestNewGroupConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
 
-	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}, 10, 10)
-	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(0, 0), NewCriticalPoint(5, 1), NewCriticalPoint(15, 5)}, 15, 0)
+	a1 := NewBasicUnit(
+		pid1,
+		[]CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 1),
+		NewCriticalPoint(10, 1))
+	a2 := NewBasicUnit(
+		pid2,
+		[]CriticalPoint{NewCriticalPoint(0, 0), NewCriticalPoint(5, 1), NewCriticalPoint(15, 5)},
+		NewCriticalPoint(15, 1),
+		NewCriticalPoint(0, 0))
 	ag1 := NewGroup(a1, a2)
 
 	c := []float64{0, -1, 0, 1, 0, 0, 0, 0, 0, 1, 5, 0, 0, 0, 0, 0}
@@ -68,11 +76,19 @@ func TestGroupUnitConstraints(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
 
-	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}, 10, 10)
+	a1 := NewBasicUnit(
+		pid1,
+		[]CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 1),
+		NewCriticalPoint(10, 1))
 	a1c := []float64{0, -10, 0, 10, 0, 0, 0, 10, 0}
 	a1.NewConstraint(a1c)
 
-	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(0, 0), NewCriticalPoint(5, 1), NewCriticalPoint(15, 5)}, 15, 0)
+	a2 := NewBasicUnit(
+		pid2,
+		[]CriticalPoint{NewCriticalPoint(0, 0), NewCriticalPoint(5, 1), NewCriticalPoint(15, 5)},
+		NewCriticalPoint(15, 1),
+		NewCriticalPoint(0, 0))
 	a2c := []float64{0, 0, 5, 15, 0, 0, 0, 15, 0}
 	a2.NewConstraint(a2c)
 
@@ -82,7 +98,7 @@ func TestGroupUnitConstraints(t *testing.T) {
 	assert.Nil(t, err)
 
 	cons := ag1.Constraints()
-	assert.Equal(t, []float64{0, -10, 0, 10, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0}, cons[5])
+	assert.Equal(t, []float64{0, -10, 0, 10, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0}, cons[len(cons)/2-1])
 	assert.Equal(t, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 15, 0, 0, 0, 15, 0}, cons[(len(cons)-2)])
 	assert.Equal(t, ag1c, cons[(len(cons)-1)])
 }
@@ -145,11 +161,19 @@ func TestGroupNetloadConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
 
-	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}, 10, 10)
+	a1 := NewBasicUnit(
+		pid1,
+		[]CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 1),
+		NewCriticalPoint(10, 1))
 	a1c := []float64{0, -10, 0, 10, 0, 0, 0, 10, 0}
 	a1.NewConstraint(a1c)
 
-	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(0, 0), NewCriticalPoint(5, 1), NewCriticalPoint(15, 5)}, 15, 0)
+	a2 := NewBasicUnit(
+		pid2,
+		[]CriticalPoint{NewCriticalPoint(0, 0), NewCriticalPoint(5, 1), NewCriticalPoint(15, 5)},
+		NewCriticalPoint(15, 1),
+		NewCriticalPoint(0, 0))
 	a2c := []float64{0, 0, 5, 15, 0, 0, 0, 15, 0}
 	a2.NewConstraint(a2c)
 

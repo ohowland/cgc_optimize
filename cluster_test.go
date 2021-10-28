@@ -71,13 +71,21 @@ func TestClusterConstraintsFromGroups(t *testing.T) {
 func TestClusterConstraintsFromAssets(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 
-	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}, 10, 10)
+	a1 := NewBasicUnit(
+		pid1,
+		[]CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 1),
+		NewCriticalPoint(10, 1))
 	c1 := []float64{5, -10, 0, 10, 0, 0, 0, 0, 5}
 	err := a1.NewConstraint(c1)
 	assert.Nil(t, err)
 
 	pid2, _ := uuid.NewUUID()
-	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}, 10, 10)
+	a2 := NewBasicUnit(
+		pid2,
+		[]CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 1),
+		NewCriticalPoint(10, 1))
 	c2 := []float64{10, -20, 0, 20, 0, 0, 0, 0, 10}
 	err = a2.NewConstraint(c2)
 	assert.Nil(t, err)

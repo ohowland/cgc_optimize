@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
 
 	"github.com/google/uuid"
@@ -10,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+/*
 func TestHighsEssLpNetLoadConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
@@ -24,42 +24,84 @@ func TestHighsEssLpNetLoadConstraint(t *testing.T) {
 	assert.InDeltaSlice(t, []float64{5, 0, 0, 0, 5, 0, 0, 0}, sol, 0.1)
 }
 
-func TestHighsPiecewiseSingleAsset(t *testing.T) {
+*/
+func TestHighsSingleAsset(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
-	a1 := opt.NewPiecewiseUnit(pid1, []opt.CriticalPoint{opt.NewCriticalPoint(-10, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 1)})
+	a1 := opt.NewBasicUnit(
+		pid1,
+		[]opt.CriticalPoint{opt.NewCriticalPoint(-10, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 1)},
+		opt.NewCriticalPoint(10, 1),
+		opt.NewCriticalPoint(10, 1))
+	a1.NewConstraint(opt.UnitSegmentConstraints(&a1)...)
+	a1.NewConstraint(opt.UnitPositiveCapacityConstraint(&a1))
+	a1.NewConstraint(opt.UnitNegativeCapacityConstraint(&a1))
+
 	ag1 := opt.NewGroup(a1)
+	ag1.NewConstraint(opt.NetLoadConstraint(&ag1, 5))
 
-	nlc := opt.NetLoadPiecewiseConstraint(&ag1, 5)
-	ag1.NewConstraint(nlc)
-
-	fmt.Println("cost coeff:", ag1.CostCoefficients())
-	fmt.Println("crit pts:", ag1.CriticalPoints())
-	fmt.Println("binary mask:", ag1.Integrality())
-	fmt.Println("bounds:", ag1.Bounds())
-	fmt.Println("constraints:", ag1.Constraints())
+	//fmt.Println("cost coeff:", ag1.CostCoefficients())
+	//fmt.Println("crit pts:", ag1.CriticalPoints())
+	//fmt.Println("binary mask:", ag1.Integrality())
+	//fmt.Println("bounds:", ag1.Bounds())
+	//fmt.Println("constraints:", ag1.Constraints())
 
 	sol := SolveMip(ag1)
 
-	fmt.Println("solution:", sol)
-	assert.InDeltaSlice(t, []float64{0, 0.5, 0.5, 0, 1, 0}, sol, 0.1)
+	//fmt.Println("solution:", sol)
+	assert.InDeltaSlice(t, []float64{0, 0.5, 0.5, 0, 1, 0.5, 0}, sol, 0.1)
+}
+func TestHighsSingleAssetNegative(t *testing.T) {
+	pid1, _ := uuid.NewUUID()
+	a1 := opt.NewBasicUnit(
+		pid1,
+		[]opt.CriticalPoint{opt.NewCriticalPoint(-10, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 1)},
+		opt.NewCriticalPoint(10, 1),
+		opt.NewCriticalPoint(10, 1))
+	a1.NewConstraint(opt.UnitSegmentConstraints(&a1)...)
+	a1.NewConstraint(opt.UnitPositiveCapacityConstraint(&a1))
+	a1.NewConstraint(opt.UnitNegativeCapacityConstraint(&a1))
+
+	ag1 := opt.NewGroup(a1)
+	ag1.NewConstraint(opt.NetLoadConstraint(&ag1, -6))
+
+	sol := SolveMip(ag1)
+
+	//fmt.Println("constraints:", ag1.Constraints())
+	//fmt.Println("solution:", sol)
+	assert.InDeltaSlice(t, []float64{0.6, 0.4, 0, 1, 0, 0, 0.6}, sol, 0.1)
 }
 
-func TestHighsPiecewiseTwoAssets(t *testing.T) {
+func TestHighsTwoAssets(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
-	a1 := opt.NewPiecewiseUnit(pid1, []opt.CriticalPoint{opt.NewCriticalPoint(-10, 3), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 3)})
+	a1 := opt.NewBasicUnit(
+		pid1,
+		[]opt.CriticalPoint{opt.NewCriticalPoint(-10, -3), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 3)},
+		opt.NewCriticalPoint(10, 1),
+		opt.NewCriticalPoint(10, 1))
+	a1.NewConstraint(opt.UnitSegmentConstraints(&a1)...)
+	a1.NewConstraint(opt.UnitPositiveCapacityConstraint(&a1))
+	a1.NewConstraint(opt.UnitNegativeCapacityConstraint(&a1))
 
 	pid2, _ := uuid.NewUUID()
-	a2 := opt.NewPiecewiseUnit(pid2, []opt.CriticalPoint{opt.NewCriticalPoint(-5, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(5, 1)})
+	a2 := opt.NewBasicUnit(
+		pid2,
+		[]opt.CriticalPoint{opt.NewCriticalPoint(-5, -1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(5, 1)},
+		opt.NewCriticalPoint(5, 1),
+		opt.NewCriticalPoint(5, 1))
+	a2.NewConstraint(opt.UnitSegmentConstraints(&a2)...)
+	a2.NewConstraint(opt.UnitPositiveCapacityConstraint(&a2))
+	a2.NewConstraint(opt.UnitNegativeCapacityConstraint(&a2))
 
 	ag1 := opt.NewGroup(a1, a2)
-	nlc := opt.NetLoadPiecewiseConstraint(&ag1, 10)
+	nlc := opt.NetLoadConstraint(&ag1, 10)
 	ag1.NewConstraint(nlc)
 
 	sol := SolveMip(ag1)
 	fmt.Println("solution:", sol)
-	assert.InDeltaSlice(t, []float64{0, 0.5, 0.5, 0, 1, 0, 0, 0, 1, 0, 1, 0}, sol, 0.1)
+	assert.InDeltaSlice(t, []float64{0, 0.5, 0.5, 0, 1, 0.5, 0, 0, 0, 1, 0, 1, 1, 0}, sol, 0.1)
 }
 
+/*
 func TestHighsEssLpAssetCapacityConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()
@@ -160,3 +202,4 @@ func TestHighsEssLpSeriesChargeBatteryConstraint(t *testing.T) {
 	sol := SolveLp(s1)
 	assert.InDeltaSlice(t, []float64{0, 10, 10, 5, 0, 10, 10, 10, 0, 10, 10, 15, 0, 10, 10, 20}, sol, 0.1, "battery negative power not increasing stored energy")
 }
+*/

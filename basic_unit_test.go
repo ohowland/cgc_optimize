@@ -12,9 +12,15 @@ import (
 func NewTestBasicUnit() BasicUnit {
 	pid, _ := uuid.NewUUID()
 	cp := []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}
-	pCap := cp[2].KW()
-	nCap := math.Abs(cp[0].KW())
-	return NewBasicUnit(pid, cp, pCap, nCap)
+	pCap := cp[2]
+	nCap := CriticalPoint{math.Abs(cp[0].KW()), cp[0].CostPerKWH()}
+	u := NewBasicUnit(pid, cp, pCap, nCap)
+
+	u.NewConstraint(UnitSegmentConstraints(&u)...)
+	u.NewConstraint(UnitPositiveCapacityConstraint(&u))
+	u.NewConstraint(UnitNegativeCapacityConstraint(&u))
+
+	return u
 }
 
 func TestNewBasicUnitSize(t *testing.T) {
@@ -38,8 +44,8 @@ func TestBasicUnitIntegrality(t *testing.T) {
 func TestBasicUnitCriticalPoints(t *testing.T) {
 	pid, _ := uuid.NewUUID()
 	cp := []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}
-	pCap := cp[2].KW()
-	nCap := math.Abs(cp[0].KW())
+	pCap := cp[2]
+	nCap := CriticalPoint{math.Abs(cp[0].KW()), cp[0].CostPerKWH()}
 	u := NewBasicUnit(pid, cp, pCap, nCap)
 	assert.Equal(t, cp, u.CriticalPoints())
 
@@ -60,16 +66,14 @@ func TestBasicUnitRealPowerConstraint(t *testing.T) {
 
 func TestBasicUnitPositiveCapacityConstraint(t *testing.T) {
 	u := NewTestBasicUnit()
-
-	cn := UnitPositiveCapacityConstraint(&u, 10)
+	cn := UnitPositiveCapacityConstraint(&u)
 
 	assert.Equal(t, []float64{math.Inf(-1), -10, 0, 10, 0, 0, -10, 0, 0}, cn)
 }
 
 func TestBasicUnitNegativeCapacityConstraint(t *testing.T) {
 	u := NewTestBasicUnit()
-
-	cn := UnitNegativeCapacityConstraint(&u, 10)
+	cn := UnitNegativeCapacityConstraint(&u)
 
 	assert.Equal(t, []float64{0, -10, 0, 10, 0, 0, 0, 10, math.Inf(1)}, cn)
 }

@@ -24,5 +24,6 @@ type Unit interface {
 
 type EnergyStorageUnit interface {
 	Unit
+	StoredEnery() []float64
 	StoredEnergyLoc() []int
 }
