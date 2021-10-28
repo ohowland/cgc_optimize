@@ -10,12 +10,14 @@ import (
 )
 
 type BasicUnit struct {
-	pid            uuid.UUID
-	coefficients   []float64
-	bounds         [][2]float64
-	constraints    [][]float64
-	integrality    []int
-	criticalPoints []CriticalPoint
+	pid                  uuid.UUID
+	coefficients         []float64
+	bounds               [][2]float64
+	constraints          [][]float64
+	integrality          []int
+	criticalPoints       []CriticalPoint
+	realPositiveCapacity float64
+	realNegativeCapacity float64
 }
 
 type CriticalPoint struct {
@@ -36,8 +38,11 @@ func (cp CriticalPoint) CostPerKWH() float64 {
 }
 
 // NewBasicUnit returns a configured unit struct.
-func NewBasicUnit(pid uuid.UUID, c []CriticalPoint) BasicUnit {
+func NewBasicUnit(pid uuid.UUID, c []CriticalPoint, pCap float64, nCap float64) BasicUnit {
 
+	if pCap < 0 || nCap < 0 {
+		panic("basic unit positive and negative capacity must be greater than 0")
+	}
 	// order critical points ascending.
 	sort.Slice(c, func(i, j int) bool {
 		return (c[i].kw < c[j].kw)
@@ -48,7 +53,7 @@ func NewBasicUnit(pid uuid.UUID, c []CriticalPoint) BasicUnit {
 	binaryMask := buildBinaryMask(c, len(coefficients))
 	constraints := buildConstraints(c, len(coefficients))
 
-	return BasicUnit{pid, coefficients, bounds, constraints, binaryMask, c}
+	return BasicUnit{pid, coefficients, bounds, constraints, binaryMask, c, pCap, nCap}
 }
 
 func buildCoefficients(c []CriticalPoint) []float64 {
@@ -72,7 +77,7 @@ func buildBounds(c []CriticalPoint) [][2]float64 {
 
 	bounds := [][2]float64{}
 	for i := 0; i < len(c); i++ {
-		bounds = append(bounds, [2]float64{0, math.Inf(1)})
+		bounds = append(bounds, [2]float64{0, 1})
 	}
 
 	// set bounds on binary decision vairables
@@ -190,6 +195,14 @@ func (u BasicUnit) Integrality() []int {
 
 func (u BasicUnit) CriticalPoints() []CriticalPoint {
 	return u.criticalPoints
+}
+
+func (u BasicUnit) RealPositiveCapacity() []float64 {
+	return []float64{u.realPositiveCapacity}
+}
+
+func (u BasicUnit) RealNegativeCapacity() []float64 {
+	return []float64{u.realNegativeCapacity}
 }
 
 func (u BasicUnit) RealPowerLoc() []int {

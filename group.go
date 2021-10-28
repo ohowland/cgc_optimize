@@ -101,6 +101,22 @@ func (g Group) CriticalPoints() []CriticalPoint {
 	return cp
 }
 
+func (g Group) RealPositiveCapacity() []float64 {
+	rpc := make([]float64, 0)
+	for _, u := range g.units {
+		rpc = append(rpc, u.RealPositiveCapacity()...)
+	}
+	return rpc
+}
+
+func (g Group) RealNegativeCapacity() []float64 {
+	rpc := make([]float64, 0)
+	for _, u := range g.units {
+		rpc = append(rpc, u.RealNegativeCapacity()...)
+	}
+	return rpc
+}
+
 func (g Group) RealPowerLoc() []int {
 	loc := make([]int, 0)
 	i := 0
@@ -129,7 +145,7 @@ func (g Group) RealNegativeCapacityLoc() []int {
 	loc := make([]int, 0)
 	i := 0
 	for _, u := range g.units {
-		for _, p := range u.RealPositiveCapacityLoc() {
+		for _, p := range u.RealNegativeCapacityLoc() {
 			loc = append(loc, p+i)
 		}
 		i += u.ColumnSize()
@@ -191,7 +207,6 @@ func (g Group) StoredEnergyPidLoc(t_pid uuid.UUID) []int {
 // NetLoadPiecewiseConstraint return a constraint of the form: Sum_i(x1+x2+...xn) == t_nl
 func NetLoadConstraint(g *Group, t_nl float64) []float64 {
 	c := make([]float64, g.ColumnSize())
-
 	rpl := g.RealPowerLoc() // RealNegativePowerLoc would return same value.
 	cps := g.CriticalPoints()
 	for i, loc := range rpl {
@@ -201,23 +216,25 @@ func NetLoadConstraint(g *Group, t_nl float64) []float64 {
 	return boundConstraint(c, t_nl, t_nl)
 }
 
-// GroupPositiveCapacityConstriant returns a constraint of the form: Sum_i(Xc_i) >= t_cap
+// GroupPositiveCapacityConstriant returns a constraint
 func GroupPositiveCapacityConstraint(g *Group, t_cap float64) []float64 {
 	c := make([]float64, g.ColumnSize())
-	pc := g.RealPositiveCapacityLoc()
-	for _, i := range pc {
-		c[i] = 1.0
+	rpcl := g.RealPositiveCapacityLoc()
+	rpc := g.RealPositiveCapacity()
+	for i, loc := range rpcl {
+		c[loc] = rpc[i]
 	}
 
 	return boundConstraint(c, t_cap, math.Inf(1))
 }
 
-// GroupNegativeCapacityConstriant returns a constraint of the form: Sum_i(Xc_i) >= t_cap
+// GroupNegativeCapacityConstriant returns a constraint
 func GroupNegativeCapacityConstraint(g *Group, t_cap float64) []float64 {
 	c := make([]float64, g.ColumnSize())
-	pc := g.RealNegativeCapacityLoc()
-	for _, i := range pc {
-		c[i] = 1.0
+	rncl := g.RealNegativeCapacityLoc()
+	rnc := g.RealNegativeCapacity()
+	for i, loc := range rncl {
+		c[loc] = rnc[i]
 	}
 
 	return boundConstraint(c, t_cap, math.Inf(1))

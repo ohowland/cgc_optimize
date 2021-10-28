@@ -12,7 +12,9 @@ import (
 func NewTestBasicUnit() BasicUnit {
 	pid, _ := uuid.NewUUID()
 	cp := []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}
-	return NewBasicUnit(pid, cp)
+	pCap := cp[2].KW()
+	nCap := math.Abs(cp[0].KW())
+	return NewBasicUnit(pid, cp, pCap, nCap)
 }
 
 func TestNewBasicUnitSize(t *testing.T) {
@@ -36,7 +38,9 @@ func TestBasicUnitIntegrality(t *testing.T) {
 func TestBasicUnitCriticalPoints(t *testing.T) {
 	pid, _ := uuid.NewUUID()
 	cp := []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}
-	u := NewBasicUnit(pid, cp)
+	pCap := cp[2].KW()
+	nCap := math.Abs(cp[0].KW())
+	u := NewBasicUnit(pid, cp, pCap, nCap)
 	assert.Equal(t, cp, u.CriticalPoints())
 
 	rev_cp := make([]CriticalPoint, len(cp))

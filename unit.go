@@ -11,7 +11,10 @@ type Unit interface {
 	Constraints() [][]float64
 	ColumnSize() int
 	Integrality() []int
+
 	CriticalPoints() []CriticalPoint
+	RealPositiveCapacity() []float64
+	RealNegativeCapacity() []float64
 
 	RealPowerLoc() []int
 	RealPositiveCapacityLoc() []int
