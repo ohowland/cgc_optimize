@@ -39,50 +39,50 @@ func (cp CriticalPoint) CostPerKWH() float64 {
 }
 
 // NewBasicUnit returns a configured unit struct.
-func NewBasicUnit(pid uuid.UUID, c []CriticalPoint, pCap CriticalPoint, nCap CriticalPoint) BasicUnit {
+func NewBasicUnit(t_pid uuid.UUID, t_cps []CriticalPoint, t_pCap CriticalPoint, t_nCap CriticalPoint) BasicUnit {
 
-	if pCap.KW() < 0 || nCap.KW() < 0 {
+	if t_pCap.KW() < 0 || t_nCap.KW() < 0 {
 		panic("basic unit positive and negative capacity must be greater than or equal to 0")
 	}
 	// order critical points ascending.
-	sort.Slice(c, func(i, j int) bool {
-		return (c[i].kw < c[j].kw)
+	sort.Slice(t_cps, func(i, j int) bool {
+		return (t_cps[i].kw < t_cps[j].kw)
 	})
 
-	coefficients := buildCoefficients(c, pCap, nCap)
-	bounds := buildBounds(c)
-	binaryMask := buildBinaryMask(c, len(coefficients))
+	coefficients := buildCoefficients(t_cps, t_pCap, t_nCap)
+	bounds := buildBounds(t_cps)
+	binaryMask := buildBinaryMask(t_cps, len(coefficients))
 	constraints := make([][]float64, 0)
 
-	return BasicUnit{pid, coefficients, bounds, constraints, binaryMask, c, pCap, nCap}
+	return BasicUnit{t_pid, coefficients, bounds, constraints, binaryMask, t_cps, t_pCap, t_nCap}
 }
 
-func buildCoefficients(c []CriticalPoint, pCap CriticalPoint, nCap CriticalPoint) []float64 {
+func buildCoefficients(t_cps []CriticalPoint, t_pCap CriticalPoint, t_nCap CriticalPoint) []float64 {
 	// Variable cost is split into continious segments described by critical points. Constraints are formed to allow
 	// only one segement to be active at a time (i.e. the line between two critical points).
 	coefficients := []float64{}
-	for _, cp := range c {
+	for _, cp := range t_cps {
 		coefficients = append(coefficients, cp.costPerKwh)
 	}
 
-	binaryCoeff := make([]float64, len(c)-1)
+	binaryCoeff := make([]float64, len(t_cps)-1)
 	coefficients = append(coefficients, binaryCoeff...)
 
-	coefficients = append(coefficients, pCap.CostPerKWH())
-	coefficients = append(coefficients, nCap.CostPerKWH())
+	coefficients = append(coefficients, t_pCap.CostPerKWH())
+	coefficients = append(coefficients, t_nCap.CostPerKWH())
 
 	return coefficients
 }
 
-func buildBounds(c []CriticalPoint) [][2]float64 {
+func buildBounds(t_cps []CriticalPoint) [][2]float64 {
 
 	bounds := [][2]float64{}
-	for i := 0; i < len(c); i++ {
+	for i := 0; i < len(t_cps); i++ {
 		bounds = append(bounds, [2]float64{0, 1})
 	}
 
 	// set bounds on binary decision vairables
-	for i := 0; i < len(c)-1; i++ {
+	for i := 0; i < len(t_cps)-1; i++ {
 		bounds = append(bounds, [2]float64{0, 1})
 	}
 
@@ -93,9 +93,9 @@ func buildBounds(c []CriticalPoint) [][2]float64 {
 }
 
 // buildBinaryMask returns a binary integer slice masking the integer decision variables
-func buildBinaryMask(c []CriticalPoint, l int) []int {
+func buildBinaryMask(t_cps []CriticalPoint, l int) []int {
 	mask := make([]int, l)
-	for i := len(c); i < len(c)*2-1; i++ {
+	for i := len(t_cps); i < len(t_cps)*2-1; i++ {
 		mask[i] = 1
 	}
 
@@ -164,25 +164,25 @@ func (u BasicUnit) RealNegativeCapacityLoc() []int {
 
 // Constraints
 
-func UnitPositiveCapacityConstraint(u *BasicUnit) []float64 {
-	cons := make([]float64, u.ColumnSize())
-	for i, cp := range u.CriticalPoints() {
+func UnitPositiveCapacityConstraint(t_u BasicUnit) []float64 {
+	cons := make([]float64, t_u.ColumnSize())
+	for i, cp := range t_u.CriticalPoints() {
 		cons[i] = cp.KW()
 	}
 
-	cons[u.RealPositiveCapacityLoc()[0]] = -u.RealPositiveCapacity()[0]
+	cons[t_u.RealPositiveCapacityLoc()[0]] = -t_u.RealPositiveCapacity()[0]
 
 	cons = boundConstraint(cons, math.Inf(-1), 0)
 	return cons
 }
 
-func UnitNegativeCapacityConstraint(u *BasicUnit) []float64 {
-	cons := make([]float64, u.ColumnSize())
-	for i, cp := range u.CriticalPoints() {
+func UnitNegativeCapacityConstraint(t_u BasicUnit) []float64 {
+	cons := make([]float64, t_u.ColumnSize())
+	for i, cp := range t_u.CriticalPoints() {
 		cons[i] = cp.KW()
 	}
 
-	cons[u.RealNegativeCapacityLoc()[0]] = u.RealNegativeCapacity()[0]
+	cons[t_u.RealNegativeCapacityLoc()[0]] = t_u.RealNegativeCapacity()[0]
 
 	cons = boundConstraint(cons, 0, math.Inf(1))
 	return cons
@@ -200,24 +200,24 @@ func (u BasicUnit) ColumnSize() int {
 	return len(u.coefficients)
 }
 
-func UnitRealPowerConstraint(u *BasicUnit, setpt float64) []float64 {
-	rpl := u.RealPowerLoc()
-	cp := u.CriticalPoints()
+func UnitRealPowerConstraint(t_u Unit, t_kw float64) []float64 {
+	rpl := t_u.RealPowerLoc()
+	cp := t_u.CriticalPoints()
 
-	c := make([]float64, u.ColumnSize())
+	c := make([]float64, t_u.ColumnSize())
 	for i, loc := range rpl {
 		c[loc] = cp[i].KW()
 	}
 
-	return boundConstraint(c, setpt, setpt)
+	return boundConstraint(c, t_kw, t_kw)
 }
 
 // buildConstraintsSegement creates a lower diagonal matrix
-func segmentPartitionConstraints(u *BasicUnit) [][]float64 {
+func segmentPartitionConstraints(t_u Unit) [][]float64 {
 	cons := [][]float64{}
-	cplen := len(u.criticalPoints)
-	for i := range u.CriticalPoints() {
-		con := make([]float64, u.ColumnSize())
+	cplen := len(t_u.CriticalPoints())
+	for i := range t_u.CriticalPoints() {
+		con := make([]float64, t_u.ColumnSize())
 		con[i] = 1
 
 		if i < cplen-1 {
@@ -234,23 +234,23 @@ func segmentPartitionConstraints(u *BasicUnit) [][]float64 {
 	return cons
 }
 
-func segmentInterpolationConstraint(u *BasicUnit) []float64 {
+func segmentInterpolationConstraint(t_u Unit) []float64 {
 	// segment interpolation constraint
 	// [0, 1, 1, 1, 0, 0, 0, 0 1]
-	cons := make([]float64, u.ColumnSize())
-	for i := range u.CriticalPoints() {
+	cons := make([]float64, t_u.ColumnSize())
+	for i := range t_u.CriticalPoints() {
 		cons[i] = 1
 	}
 
 	return boundConstraint(cons, 1, 1)
 }
 
-func segmentActivationConstraint(u *BasicUnit) []float64 {
+func segmentActivationConstraint(t_u Unit) []float64 {
 
 	// segment activation constraint
 	// [0, 0, 0, 0, 1, 1, 0, 0 1]
-	cons := make([]float64, u.ColumnSize())
-	cplen := len(u.CriticalPoints())
+	cons := make([]float64, t_u.ColumnSize())
+	cplen := len(t_u.CriticalPoints())
 	for i := cplen; i < cplen*2-1; i++ {
 		cons[i] = 1
 	}
@@ -258,11 +258,11 @@ func segmentActivationConstraint(u *BasicUnit) []float64 {
 	return boundConstraint(cons, 1, 1)
 }
 
-func UnitSegmentConstraints(u *BasicUnit) [][]float64 {
+func UnitSegmentConstraints(t_u Unit) [][]float64 {
 
-	cons := segmentPartitionConstraints(u)
-	cons = append(cons, segmentInterpolationConstraint(u))
-	cons = append(cons, segmentActivationConstraint(u))
+	cons := segmentPartitionConstraints(t_u)
+	cons = append(cons, segmentInterpolationConstraint(t_u))
+	cons = append(cons, segmentActivationConstraint(t_u))
 
 	return cons
 }

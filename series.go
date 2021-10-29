@@ -8,7 +8,7 @@ import (
 )
 
 type Series struct {
-	clusters    []Sequencer
+	elem        []Sequencer
 	constraints [][]float64
 }
 
@@ -17,16 +17,12 @@ type Sequencer interface {
 	Constraints() [][]float64
 	Bounds() [][2]float64
 	ColumnSize() int
-	PowerLoc
-	StorageLoc
-}
 
-type PowerLoc interface {
 	RealPowerPidLoc(uuid.UUID) []int
-}
+	CriticalPointsPid(uuid.UUID) []CriticalPoint
 
-type StorageLoc interface {
 	StoredEnergyPidLoc(uuid.UUID) []int
+	StoredEnergyCapacityPid(uuid.UUID) []float64
 }
 
 func NewSeries(sequence ...Sequencer) Series {
@@ -35,7 +31,7 @@ func NewSeries(sequence ...Sequencer) Series {
 
 func (se Series) CostCoefficients() []float64 {
 	cc := []float64{}
-	for _, cl := range se.clusters {
+	for _, cl := range se.elem {
 		cc = append(cc, cl.CostCoefficients()...)
 	}
 
@@ -45,7 +41,7 @@ func (se Series) CostCoefficients() []float64 {
 func (se Series) Bounds() [][2]float64 {
 	b := make([][2]float64, 0)
 
-	for _, cl := range se.clusters {
+	for _, cl := range se.elem {
 		b = append(b, cl.Bounds()...)
 	}
 	return b
@@ -56,7 +52,7 @@ func (se Series) Constraints() [][]float64 {
 	sec := make([][]float64, 0) // Series Constraint
 
 	i := 0
-	for _, cl := range se.clusters {
+	for _, cl := range se.elem {
 		pre := make([]float64, i+1)
 		post := make([]float64, s-i-cl.ColumnSize()+1)
 		for _, clc := range cl.Constraints() {
@@ -89,7 +85,7 @@ func (se *Series) NewConstraint(t_c ...[]float64) error {
 
 func (se *Series) ColumnSize() int {
 	var s int
-	for _, cl := range se.clusters {
+	for _, cl := range se.elem {
 		s += cl.ColumnSize()
 	}
 
@@ -99,7 +95,7 @@ func (se *Series) ColumnSize() int {
 func (se Series) RealPowerPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
 	i := 0
-	for _, cl := range se.clusters {
+	for _, cl := range se.elem {
 		for _, p := range cl.RealPowerPidLoc(t_pid) {
 			loc = append(loc, p+i)
 		}
@@ -112,7 +108,7 @@ func (se Series) RealPowerPidLoc(t_pid uuid.UUID) []int {
 func (se Series) StoredEnergyPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
 	i := 0
-	for _, cl := range se.clusters {
+	for _, cl := range se.elem {
 		for _, p := range cl.StoredEnergyPidLoc(t_pid) {
 			loc = append(loc, p+i)
 		}
@@ -122,27 +118,61 @@ func (se Series) StoredEnergyPidLoc(t_pid uuid.UUID) []int {
 	return loc
 }
 
+func (se Series) StoredEnergyCapacityPid(t_pid uuid.UUID) []float64 {
+	eCap := make([]float64, 0)
+	for _, cl := range se.elem {
+		for _, e := range cl.StoredEnergyCapacityPid(t_pid) {
+			eCap = append(eCap, e)
+		}
+	}
+
+	return eCap
+}
+
+func (se Series) CriticalPointsPid(t_pid uuid.UUID) []CriticalPoint {
+	cps := make([]CriticalPoint, 0)
+	for _, e := range se.elem {
+		cps = append(cps, e.CriticalPointsPid(t_pid)...)
+	}
+
+	return cps
+}
+
 // BatteryInitialEnergyConstraint returns a constraint of the form: e_t0 = t_e
 func BatteryInitialEnergyConstraint(t_se *Series, t_pid uuid.UUID, t_e float64) []float64 {
 	eLoc := t_se.StoredEnergyPidLoc(t_pid)
+	eCap := t_se.StoredEnergyCapacityPid(t_pid)[0]
+
 	c := make([]float64, t_se.ColumnSize())
-	c[eLoc[0]] = 1
-	c = boundConstraint(c, t_e, t_e)
+	c[eLoc[0]] = t_e
+	c = boundConstraint(c, t_e/eCap, t_e/eCap)
 
 	return c
 }
 
-// BatteryEnergyConstraint returns a constraint of the form: e_ti - (p_ti-n_ti)*t = e_t(i+1)
+// BatteryEnergyConstraint returns a constraint of the form: e_ti - (sum(p_ti))*t = e_t(i+1)
 func BatteryEnergyConstraint(t_se *Series, t_pid uuid.UUID, t_tstep float64) [][]float64 {
-	pLoc := t_se.RealPowerPidLoc(t_pid)
-	eLoc := t_se.StoredEnergyPidLoc(t_pid)
+	// Get ESS critical points and energy capacity
+	// Assumes the critical points and stored energy capacity do not change in series.
+	cps := t_se.elem[0].CriticalPointsPid(t_pid)
+	e := t_se.elem[0].StoredEnergyCapacityPid(t_pid)
 
 	cx := make([][]float64, 0)
-	for i := 0; i < len(eLoc)-1; i++ {
+
+	// eCap*e_t0 - (sum(p_t0)) * -tstep = eCap*e_t1
+	for i := 0; i < len(t_se.elem)-1; i++ {
+		pLoc_t0 := t_se.elem[i].RealPowerPidLoc(t_pid)
+		eLoc_t0 := t_se.elem[i].StoredEnergyPidLoc(t_pid)
+		eLoc_t1 := t_se.elem[i+1].StoredEnergyPidLoc(t_pid)
+
 		c := make([]float64, t_se.ColumnSize())
-		c[pLoc[i]] = -t_tstep
-		c[eLoc[i]] = 1
-		c[eLoc[i+1]] = -1
+		for i, loc := range pLoc_t0 {
+			c[loc] = cps[i].KW() * -t_tstep
+		}
+
+		c[eLoc_t0[0]] = e[0]
+		c[eLoc_t1[0]] = -e[0]
+
 		c = boundConstraint(c, 0, 0)
 		cx = append(cx, c)
 	}

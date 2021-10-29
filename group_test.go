@@ -150,11 +150,13 @@ func TestLocateRealNegativeCapacity(t *testing.T) {
 	assert.Equal(t, []int{6, 13}, loc)
 }
 
+/*
 func TestLocateStoredCapacity(t *testing.T) {
 	ag1 := NewTestGroup()
 	loc := ag1.StoredEnergyLoc()
 	assert.Equal(t, []int{}, loc)
 }
+*/
 
 // constraint generation
 func TestGroupNetloadConstraint(t *testing.T) {

@@ -117,6 +117,30 @@ func (g Group) RealNegativeCapacity() []float64 {
 	return rpc
 }
 
+func (g Group) StoredEnergyCapacityPid(t_pid uuid.UUID) []float64 {
+	eCap := make([]float64, 0)
+	for _, u := range g.units {
+		switch v := u.(type) {
+		case EnergyStorageUnit:
+			if u.PID() == t_pid {
+				eCap = append(eCap, v.StoredEnergyCapacity()...)
+			}
+		default:
+		}
+	}
+	return eCap
+}
+
+func (g Group) CriticalPointsPid(t_pid uuid.UUID) []CriticalPoint {
+	cp := make([]CriticalPoint, 0)
+	for _, u := range g.units {
+		if u.PID() == t_pid {
+			cp = append(cp, u.CriticalPoints()...)
+		}
+	}
+	return cp
+}
+
 func (g Group) RealPowerLoc() []int {
 	loc := make([]int, 0)
 	i := 0
@@ -153,6 +177,7 @@ func (g Group) RealNegativeCapacityLoc() []int {
 	return loc
 }
 
+/*
 func (g Group) StoredEnergyLoc() []int {
 	loc := make([]int, 0)
 	i := 0
@@ -168,6 +193,7 @@ func (g Group) StoredEnergyLoc() []int {
 	}
 	return loc
 }
+*/
 
 func (g Group) RealPowerPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
@@ -194,10 +220,9 @@ func (g Group) StoredEnergyPidLoc(t_pid uuid.UUID) []int {
 					loc = append(loc, p+i)
 				}
 			}
-			i += u.ColumnSize()
 		default:
 		}
-
+		i += u.ColumnSize()
 	}
 	return loc
 }

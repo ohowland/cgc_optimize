@@ -8,12 +8,13 @@ import (
 )
 
 type EssUnit struct {
-	bu     BasicUnit
-	energy float64
+	bu             BasicUnit // Composed of a basic unit
+	energyCapacity float64   // Stored energy capacity
 }
 
 // NewEssUnit returns a configured unit struct.
-func NewEssUnit(pid uuid.UUID, c []CriticalPoint, pCap CriticalPoint, nCap CriticalPoint, e float64) EssUnit {
+// Power and capacity as kW, and energy as kWh
+func NewEssUnit(pid uuid.UUID, c []CriticalPoint, pCap CriticalPoint, nCap CriticalPoint, storedEnergy float64) EssUnit {
 
 	basicUnit := NewBasicUnit(pid, c, pCap, nCap)
 
@@ -29,7 +30,7 @@ func NewEssUnit(pid uuid.UUID, c []CriticalPoint, pCap CriticalPoint, nCap Criti
 
 	basicUnit.constraints = cons
 
-	return EssUnit{basicUnit, e}
+	return EssUnit{basicUnit, storedEnergy}
 }
 
 func (u EssUnit) PID() uuid.UUID {
@@ -103,26 +104,12 @@ func (u EssUnit) RealNegativeCapacityLoc() []int {
 
 	return loc
 }
-func (u EssUnit) StoredEneryLoc() []int {
+func (u EssUnit) StoredEnergyLoc() []int {
 	loc := []int{len(u.bu.criticalPoints)*2 + 1}
 
 	return loc
 }
 
-func (u EssUnit) StoredEnergy() []float64 {
-	return []float64{u.energy}
-}
-
-// Constraints
-
-func EssUnitRealPowerConstraint(u *EssUnit, setpt float64) []float64 {
-	rpl := u.RealPowerLoc()
-	cp := u.CriticalPoints()
-
-	c := make([]float64, u.ColumnSize())
-	for i, loc := range rpl {
-		c[loc] = cp[i].KW()
-	}
-
-	return boundConstraint(c, setpt, setpt)
+func (u EssUnit) StoredEnergyCapacity() []float64 {
+	return []float64{u.energyCapacity}
 }

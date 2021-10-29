@@ -19,11 +19,10 @@ type Unit interface {
 	RealPowerLoc() []int
 	RealPositiveCapacityLoc() []int
 	RealNegativeCapacityLoc() []int
-	//StoredEnergyLoc() []int
 }
 
 type EnergyStorageUnit interface {
 	Unit
-	StoredEnery() []float64
+	StoredEnergyCapacity() []float64
 	StoredEnergyLoc() []int
 }

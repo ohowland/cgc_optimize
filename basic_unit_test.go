@@ -16,9 +16,9 @@ func NewTestBasicUnit() BasicUnit {
 	nCap := CriticalPoint{math.Abs(cp[0].KW()), cp[0].CostPerKWH()}
 	u := NewBasicUnit(pid, cp, pCap, nCap)
 
-	u.NewConstraint(UnitSegmentConstraints(&u)...)
-	u.NewConstraint(UnitPositiveCapacityConstraint(&u))
-	u.NewConstraint(UnitNegativeCapacityConstraint(&u))
+	u.NewConstraint(UnitSegmentConstraints(u)...)
+	u.NewConstraint(UnitPositiveCapacityConstraint(u))
+	u.NewConstraint(UnitNegativeCapacityConstraint(u))
 
 	return u
 }
@@ -59,21 +59,21 @@ func TestBasicUnitCriticalPoints(t *testing.T) {
 func TestBasicUnitRealPowerConstraint(t *testing.T) {
 	u := NewTestBasicUnit()
 
-	cn := UnitRealPowerConstraint(&u, 5.5)
+	cn := UnitRealPowerConstraint(u, 5.5)
 
 	assert.Equal(t, []float64{5.5, -10, 0, 10, 0, 0, 0, 0, 5.5}, cn)
 }
 
 func TestBasicUnitPositiveCapacityConstraint(t *testing.T) {
 	u := NewTestBasicUnit()
-	cn := UnitPositiveCapacityConstraint(&u)
+	cn := UnitPositiveCapacityConstraint(u)
 
 	assert.Equal(t, []float64{math.Inf(-1), -10, 0, 10, 0, 0, -10, 0, 0}, cn)
 }
 
 func TestBasicUnitNegativeCapacityConstraint(t *testing.T) {
 	u := NewTestBasicUnit()
-	cn := UnitNegativeCapacityConstraint(&u)
+	cn := UnitNegativeCapacityConstraint(u)
 
 	assert.Equal(t, []float64{0, -10, 0, 10, 0, 0, 0, 10, math.Inf(1)}, cn)
 }

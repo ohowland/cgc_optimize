@@ -78,6 +78,14 @@ func (cl *Cluster) NewConstraint(t_c ...[]float64) error {
 	return nil
 }
 
+func (cl Cluster) StoredEnergyCapacityPid(t_pid uuid.UUID) []float64 {
+	eCap := make([]float64, 0)
+	for _, g := range cl.groups {
+		eCap = append(eCap, g.StoredEnergyCapacityPid(t_pid)...)
+	}
+	return eCap
+}
+
 func (cl Cluster) RealPowerPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
 	i := 0
@@ -104,30 +112,40 @@ func (cl Cluster) StoredEnergyPidLoc(t_pid uuid.UUID) []int {
 	return loc
 }
 
-// Cluster Specific Constraints
-
-/*
-func LinkedBusConstraints(t_cl *Cluster, t_pid uuid.UUID) [][]float64 {
-	pLoc := t_cl.RealPositivePowerPidLoc(t_pid) // location of Positive Real Power decision variables
-	nLoc := t_cl.RealNegativePowerPidLoc(t_pid) // location of Negative Real Power decision variables
-
-	if len(pLoc) != 2 || len(nLoc) != 2 {
-		return [][]float64{}
+func (cl Cluster) CriticalPointsPid(t_pid uuid.UUID) []CriticalPoint {
+	cps := make([]CriticalPoint, 0)
+	for _, g := range cl.groups {
+		cps = append(cps, g.CriticalPointsPid(t_pid)...)
 	}
 
-	pc := make([]float64, t_cl.ColumnSize())
-	pc[pLoc[0]] = 1
-	pc[pLoc[1]] = -1
-	pc = boundConstraint(pc, 0, 0)
+	return cps
+}
 
-	nc := make([]float64, t_cl.ColumnSize())
-	nc[nLoc[0]] = 1
-	nc[nLoc[1]] = -1
-	nc = boundConstraint(nc, 0, 0)
+// Cluster Specific Constraints
 
-	c := make([][]float64, 0)
-	c = append(append(c, pc), nc)
+// LinkedBusConstraint targets a device that exists in two groups. The
+// Real power selected from the device is constrainted to sum to zero.
+//
+//    bus 1  device 1  bus 2
+//  ---------->-O->---------
+//        kw_in + kw_out = 0
+//
+func LinkedBusConstraints(t_cl *Cluster, t_pid uuid.UUID) []float64 {
+	pLoc := t_cl.RealPowerPidLoc(t_pid) // location of Positive Real Power decision variables
+	cps := t_cl.CriticalPointsPid(t_pid)
+
+	split := len(cps) / 2
+
+	c := make([]float64, t_cl.ColumnSize())
+	for i, loc := range pLoc {
+		if i < split {
+			c[loc] = cps[i].KW()
+		} else {
+			c[loc] = -1 * cps[i].KW()
+		}
+	}
+
+	c = boundConstraint(c, 0, 0)
 
 	return c
 }
-*/

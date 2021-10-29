@@ -143,10 +143,17 @@ func TestClusterBounds(t *testing.T) {
 
 // Cluster Constraints
 
-/*
 func TestLinkbusConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
-	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)})
+	a1 := NewEssUnit(
+		pid1,
+		[]CriticalPoint{
+			NewCriticalPoint(-10, -1),
+			NewCriticalPoint(0, 0),
+			NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 0.1),
+		NewCriticalPoint(10, 0.1),
+		100)
 
 	ag1 := NewGroup(a1)
 	ag2 := NewGroup(a1)
@@ -155,7 +162,5 @@ func TestLinkbusConstraint(t *testing.T) {
 
 	lbc := LinkedBusConstraints(&cl, pid1)
 
-	assert.Equal(t, []float64{0, 1, 0, 0, 0, -1, 0, 0, 0, 0}, lbc[0])
-	assert.Equal(t, []float64{0, 0, 1, 0, 0, 0, -1, 0, 0, 0}, lbc[1])
+	assert.Equal(t, []float64{0, -10, 0, 10, 0, 0, 0, 0, 0, 10, 0, -10, 0, 0, 0, 0, 0, 0}, lbc)
 }
-*/
