@@ -141,10 +141,10 @@ func TestClusterBounds(t *testing.T) {
 	}, b)
 }
 
-// Cluster Constraints
-
-func TestLinkbusConstraint(t *testing.T) {
+func TestClusterLocateStoredEnergy(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
+	pid2, _ := uuid.NewUUID()
+
 	a1 := NewEssUnit(
 		pid1,
 		[]CriticalPoint{
@@ -155,6 +155,41 @@ func TestLinkbusConstraint(t *testing.T) {
 		NewCriticalPoint(10, 0.1),
 		100)
 
+	a2 := NewEssUnit(
+		pid2,
+		[]CriticalPoint{
+			NewCriticalPoint(-10, -1),
+			NewCriticalPoint(0, 0),
+			NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 0.1),
+		NewCriticalPoint(10, 0.1),
+		100)
+
+	ag1 := NewGroup(a1)
+	ag2 := NewGroup(a2)
+	ac1 := NewCluster(ag1, ag2)
+
+	loc1 := ac1.StoredEnergyPidLoc(a1.PID())
+	assert.Equal(t, []int{7}, loc1)
+
+	loc2 := ac1.StoredEnergyPidLoc(a2.PID())
+	assert.Equal(t, []int{15}, loc2)
+
+}
+
+// Cluster Constraints
+
+func TestLinkbusConstraint(t *testing.T) {
+	pid1, _ := uuid.NewUUID()
+	a1 := NewBasicUnit(
+		pid1,
+		[]CriticalPoint{
+			NewCriticalPoint(-10, -1),
+			NewCriticalPoint(0, 0),
+			NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 0.1),
+		NewCriticalPoint(10, 0.1))
+
 	ag1 := NewGroup(a1)
 	ag2 := NewGroup(a1)
 
@@ -162,5 +197,5 @@ func TestLinkbusConstraint(t *testing.T) {
 
 	lbc := LinkedBusConstraints(&cl, pid1)
 
-	assert.Equal(t, []float64{0, -10, 0, 10, 0, 0, 0, 0, 0, 10, 0, -10, 0, 0, 0, 0, 0, 0}, lbc)
+	assert.Equal(t, []float64{0, -10, 0, 10, 0, 0, 0, 0, 10, 0, -10, 0, 0, 0, 0, 0}, lbc)
 }

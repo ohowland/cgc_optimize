@@ -14,7 +14,7 @@ type EssUnit struct {
 
 // NewEssUnit returns a configured unit struct.
 // Power and capacity as kW, and energy as kWh
-func NewEssUnit(pid uuid.UUID, c []CriticalPoint, pCap CriticalPoint, nCap CriticalPoint, storedEnergy float64) EssUnit {
+func NewEssUnit(pid uuid.UUID, c []CriticalPoint, pCap CriticalPoint, nCap CriticalPoint, eCap float64) EssUnit {
 
 	basicUnit := NewBasicUnit(pid, c, pCap, nCap)
 
@@ -30,7 +30,7 @@ func NewEssUnit(pid uuid.UUID, c []CriticalPoint, pCap CriticalPoint, nCap Criti
 
 	basicUnit.constraints = cons
 
-	return EssUnit{basicUnit, storedEnergy}
+	return EssUnit{basicUnit, eCap}
 }
 
 func (u EssUnit) PID() uuid.UUID {

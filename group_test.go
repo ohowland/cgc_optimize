@@ -150,13 +150,31 @@ func TestLocateRealNegativeCapacity(t *testing.T) {
 	assert.Equal(t, []int{6, 13}, loc)
 }
 
-/*
-func TestLocateStoredCapacity(t *testing.T) {
-	ag1 := NewTestGroup()
-	loc := ag1.StoredEnergyLoc()
+func TestLocateStoredEnergyCapacity(t *testing.T) {
+	pid1, _ := uuid.NewUUID()
+	pid2, _ := uuid.NewUUID()
+
+	a1 := NewBasicUnit(
+		pid1,
+		[]CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 1),
+		NewCriticalPoint(10, 1))
+
+	a2 := NewEssUnit(
+		pid2,
+		[]CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 1),
+		NewCriticalPoint(10, 1),
+		100)
+
+	ag1 := NewGroup(a1, a2)
+
+	loc := ag1.StoredEnergyPidLoc(a1.PID())
 	assert.Equal(t, []int{}, loc)
+
+	loc = ag1.StoredEnergyPidLoc(a2.PID())
+	assert.Equal(t, []int{14}, loc)
 }
-*/
 
 // constraint generation
 func TestGroupNetloadConstraint(t *testing.T) {

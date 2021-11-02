@@ -154,24 +154,24 @@ func BatteryInitialEnergyConstraint(t_se *Series, t_pid uuid.UUID, t_e float64) 
 func BatteryEnergyConstraint(t_se *Series, t_pid uuid.UUID, t_tstep float64) [][]float64 {
 	// Get ESS critical points and energy capacity
 	// Assumes the critical points and stored energy capacity do not change in series.
+	pLoc := t_se.RealPowerPidLoc(t_pid)
 	cps := t_se.elem[0].CriticalPointsPid(t_pid)
+	eLoc := t_se.StoredEnergyPidLoc(t_pid)
 	e := t_se.elem[0].StoredEnergyCapacityPid(t_pid)
 
+	// eCap*e_t0 - (sum(p_t0)) * -tstep = eCap*e_t1
 	cx := make([][]float64, 0)
 
-	// eCap*e_t0 - (sum(p_t0)) * -tstep = eCap*e_t1
+	j := 0
 	for i := 0; i < len(t_se.elem)-1; i++ {
-		pLoc_t0 := t_se.elem[i].RealPowerPidLoc(t_pid)
-		eLoc_t0 := t_se.elem[i].StoredEnergyPidLoc(t_pid)
-		eLoc_t1 := t_se.elem[i+1].StoredEnergyPidLoc(t_pid)
-
 		c := make([]float64, t_se.ColumnSize())
-		for i, loc := range pLoc_t0 {
-			c[loc] = cps[i].KW() * -t_tstep
+		for _, cp := range cps {
+			c[pLoc[j]] = cp.KW() * -t_tstep
+			j++
 		}
 
-		c[eLoc_t0[0]] = e[0]
-		c[eLoc_t1[0]] = -e[0]
+		c[eLoc[i]] = e[0]
+		c[eLoc[i+1]] = -e[0]
 
 		c = boundConstraint(c, 0, 0)
 		cx = append(cx, c)

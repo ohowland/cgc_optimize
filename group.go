@@ -177,24 +177,6 @@ func (g Group) RealNegativeCapacityLoc() []int {
 	return loc
 }
 
-/*
-func (g Group) StoredEnergyLoc() []int {
-	loc := make([]int, 0)
-	i := 0
-	for _, u := range g.units {
-		switch v := u.(type) {
-		case EnergyStorageUnit:
-			for _, p := range v.StoredEnergyLoc() {
-				loc = append(loc, p+i)
-			}
-		default:
-		}
-		i += u.ColumnSize()
-	}
-	return loc
-}
-*/
-
 func (g Group) RealPowerPidLoc(t_pid uuid.UUID) []int {
 	loc := make([]int, 0)
 	i := 0

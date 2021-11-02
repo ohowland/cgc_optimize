@@ -57,51 +57,6 @@ func NewBasicUnit(t_pid uuid.UUID, t_cps []CriticalPoint, t_pCap CriticalPoint, 
 	return BasicUnit{t_pid, coefficients, bounds, constraints, binaryMask, t_cps, t_pCap, t_nCap}
 }
 
-func buildCoefficients(t_cps []CriticalPoint, t_pCap CriticalPoint, t_nCap CriticalPoint) []float64 {
-	// Variable cost is split into continious segments described by critical points. Constraints are formed to allow
-	// only one segement to be active at a time (i.e. the line between two critical points).
-	coefficients := []float64{}
-	for _, cp := range t_cps {
-		coefficients = append(coefficients, cp.costPerKwh)
-	}
-
-	binaryCoeff := make([]float64, len(t_cps)-1)
-	coefficients = append(coefficients, binaryCoeff...)
-
-	coefficients = append(coefficients, t_pCap.CostPerKWH())
-	coefficients = append(coefficients, t_nCap.CostPerKWH())
-
-	return coefficients
-}
-
-func buildBounds(t_cps []CriticalPoint) [][2]float64 {
-
-	bounds := [][2]float64{}
-	for i := 0; i < len(t_cps); i++ {
-		bounds = append(bounds, [2]float64{0, 1})
-	}
-
-	// set bounds on binary decision vairables
-	for i := 0; i < len(t_cps)-1; i++ {
-		bounds = append(bounds, [2]float64{0, 1})
-	}
-
-	// positive and negative capacity bounds
-	bounds = append(bounds, [][2]float64{{0, 1}, {0, 1}}...)
-
-	return bounds
-}
-
-// buildBinaryMask returns a binary integer slice masking the integer decision variables
-func buildBinaryMask(t_cps []CriticalPoint, l int) []int {
-	mask := make([]int, l)
-	for i := len(t_cps); i < len(t_cps)*2-1; i++ {
-		mask[i] = 1
-	}
-
-	return mask
-}
-
 func (u *BasicUnit) NewConstraint(t_c ...[]float64) error {
 	cx := make([][]float64, 0)
 	for _, c := range t_c {
@@ -115,6 +70,18 @@ func (u *BasicUnit) NewConstraint(t_c ...[]float64) error {
 	// if no errors: add constraints to unit
 	u.constraints = append(u.constraints, cx...)
 	return nil
+}
+
+func (u BasicUnit) PID() uuid.UUID {
+	return u.pid
+}
+
+func (u BasicUnit) CostCoefficients() []float64 {
+	return u.coefficients
+}
+
+func (u BasicUnit) ColumnSize() int {
+	return len(u.coefficients)
 }
 
 func (u BasicUnit) Constraints() [][]float64 {
@@ -162,9 +129,56 @@ func (u BasicUnit) RealNegativeCapacityLoc() []int {
 	return loc
 }
 
+// build helpers
+
+func buildCoefficients(t_cps []CriticalPoint, t_pCap CriticalPoint, t_nCap CriticalPoint) []float64 {
+	// Variable cost is split into continious segments described by critical points. Constraints are formed to allow
+	// only one segement to be active at a time (i.e. the line between two critical points).
+	coefficients := []float64{}
+	for _, cp := range t_cps {
+		coefficients = append(coefficients, cp.costPerKwh)
+	}
+
+	binaryCoeff := make([]float64, len(t_cps)-1)
+	coefficients = append(coefficients, binaryCoeff...)
+
+	coefficients = append(coefficients, t_pCap.CostPerKWH())
+	coefficients = append(coefficients, t_nCap.CostPerKWH())
+
+	return coefficients
+}
+
+func buildBounds(t_cps []CriticalPoint) [][2]float64 {
+
+	bounds := [][2]float64{}
+	for i := 0; i < len(t_cps); i++ {
+		bounds = append(bounds, [2]float64{0, 1})
+	}
+
+	// set bounds on binary decision vairables
+	for i := 0; i < len(t_cps)-1; i++ {
+		bounds = append(bounds, [2]float64{0, 1})
+	}
+
+	// positive and negative capacity bounds
+	bounds = append(bounds, [][2]float64{{0, 1}, {0, 1}}...)
+
+	return bounds
+}
+
+// buildBinaryMask returns a binary integer slice masking the integer decision variables
+func buildBinaryMask(t_cps []CriticalPoint, l int) []int {
+	mask := make([]int, l)
+	for i := len(t_cps); i < len(t_cps)*2-1; i++ {
+		mask[i] = 1
+	}
+
+	return mask
+}
+
 // Constraints
 
-func UnitPositiveCapacityConstraint(t_u BasicUnit) []float64 {
+func UnitPositiveCapacityConstraint(t_u Unit) []float64 {
 	cons := make([]float64, t_u.ColumnSize())
 	for i, cp := range t_u.CriticalPoints() {
 		cons[i] = cp.KW()
@@ -176,7 +190,7 @@ func UnitPositiveCapacityConstraint(t_u BasicUnit) []float64 {
 	return cons
 }
 
-func UnitNegativeCapacityConstraint(t_u BasicUnit) []float64 {
+func UnitNegativeCapacityConstraint(t_u Unit) []float64 {
 	cons := make([]float64, t_u.ColumnSize())
 	for i, cp := range t_u.CriticalPoints() {
 		cons[i] = cp.KW()
@@ -186,18 +200,6 @@ func UnitNegativeCapacityConstraint(t_u BasicUnit) []float64 {
 
 	cons = boundConstraint(cons, 0, math.Inf(1))
 	return cons
-}
-
-func (u BasicUnit) PID() uuid.UUID {
-	return u.pid
-}
-
-func (u BasicUnit) CostCoefficients() []float64 {
-	return u.coefficients
-}
-
-func (u BasicUnit) ColumnSize() int {
-	return len(u.coefficients)
 }
 
 func UnitRealPowerConstraint(t_u Unit, t_kw float64) []float64 {

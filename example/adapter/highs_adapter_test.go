@@ -32,9 +32,9 @@ func TestHighsSingleAsset(t *testing.T) {
 		[]opt.CriticalPoint{opt.NewCriticalPoint(-10, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 1)},
 		opt.NewCriticalPoint(10, 1),
 		opt.NewCriticalPoint(10, 1))
-	a1.NewConstraint(opt.UnitSegmentConstraints(&a1)...)
-	a1.NewConstraint(opt.UnitPositiveCapacityConstraint(&a1))
-	a1.NewConstraint(opt.UnitNegativeCapacityConstraint(&a1))
+	a1.NewConstraint(opt.UnitSegmentConstraints(a1)...)
+	a1.NewConstraint(opt.UnitPositiveCapacityConstraint(a1))
+	a1.NewConstraint(opt.UnitNegativeCapacityConstraint(a1))
 
 	ag1 := opt.NewGroup(a1)
 	ag1.NewConstraint(opt.NetLoadConstraint(&ag1, 5))
@@ -57,9 +57,9 @@ func TestHighsSingleAssetNegative(t *testing.T) {
 		[]opt.CriticalPoint{opt.NewCriticalPoint(-10, 1), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 1)},
 		opt.NewCriticalPoint(10, 1),
 		opt.NewCriticalPoint(10, 1))
-	a1.NewConstraint(opt.UnitSegmentConstraints(&a1)...)
-	a1.NewConstraint(opt.UnitPositiveCapacityConstraint(&a1))
-	a1.NewConstraint(opt.UnitNegativeCapacityConstraint(&a1))
+	a1.NewConstraint(opt.UnitSegmentConstraints(a1)...)
+	a1.NewConstraint(opt.UnitPositiveCapacityConstraint(a1))
+	a1.NewConstraint(opt.UnitNegativeCapacityConstraint(a1))
 
 	ag1 := opt.NewGroup(a1)
 	ag1.NewConstraint(opt.NetLoadConstraint(&ag1, -6))
@@ -101,24 +101,37 @@ func TestHighsTwoAssets(t *testing.T) {
 	assert.InDeltaSlice(t, []float64{0, 0.5, 0.5, 0, 1, 0.5, 0, 0, 0, 1, 0, 1, 1, 0}, sol, 0.1)
 }
 
-/*
 func TestHighsEssLpAssetCapacityConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
+	a1 := opt.NewBasicUnit(
+		pid1,
+		[]opt.CriticalPoint{opt.NewCriticalPoint(-10, -3), opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(10, 3)},
+		opt.NewCriticalPoint(10, 1),
+		opt.NewCriticalPoint(10, 1))
+	a1.NewConstraint(opt.UnitSegmentConstraints(&a1)...)
+	a1.NewConstraint(opt.UnitPositiveCapacityConstraint(&a1))
+	a1.NewConstraint(opt.UnitNegativeCapacityConstraint(&a1))
+
 	pid2, _ := uuid.NewUUID()
-	a1 := opt.NewBasicUnit(pid1, 1.0, 2.0, 0.01, 0, 5, 5, 5, 5)
-	a1.NewConstraint(opt.BasicUnitCapacityConstraints(&a1)...)
-	a2 := opt.NewBasicUnit(pid2, 5.0, 6.0, 0.01, 0, 10, 10, 10, 10)
-	a2.NewConstraint(opt.BasicUnitCapacityConstraints(&a2)...)
+	a2 := opt.NewBasicUnit(
+		pid2,
+		[]opt.CriticalPoint{opt.NewCriticalPoint(0, 0), opt.NewCriticalPoint(5, 1), opt.NewCriticalPoint(20, 5)},
+		opt.NewCriticalPoint(5, 1),
+		opt.NewCriticalPoint(5, 1))
+	a2.NewConstraint(opt.UnitSegmentConstraints(&a2)...)
+	a2.NewConstraint(opt.UnitPositiveCapacityConstraint(&a2))
+	a2.NewConstraint(opt.UnitNegativeCapacityConstraint(&a2))
 
 	ag1 := opt.NewGroup(a1, a2)
 
-	nlc := opt.NetLoadConstraint(&ag1, 10)
+	nlc := opt.NetLoadConstraint(&ag1, 13)
 	ag1.NewConstraint(nlc)
 
 	sol := SolveLp(ag1)
 	assert.InDeltaSlice(t, []float64{5, 0, 5, 0, 5, 0, 5, 0}, sol, 0.1)
 }
 
+/*
 func TestHighsEssLpGroupCapacityConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
 	pid2, _ := uuid.NewUUID()

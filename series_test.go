@@ -63,24 +63,64 @@ func TestSeriesBounds(t *testing.T) {
 	assert.Equal(t, expBnds, b)
 }
 
-/*
 func TestSeriesBatteryEnergyConstraint(t *testing.T) {
 	pid1, _ := uuid.NewUUID()
-	pid2, _ := uuid.NewUUID()
-	a1 := NewBasicUnit(pid1, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}, 10, 10)
-	a2 := NewBasicUnit(pid2, []CriticalPoint{NewCriticalPoint(-10, -1), NewCriticalPoint(0, 0), NewCriticalPoint(10, 1)}, 10, 10)
-	g := NewGroup(a1, a2)
-	cl := NewCluster(g)
-	s := NewSeries(cl, cl, cl)
+	a1 := NewEssUnit(
+		pid1,
+		[]CriticalPoint{
+			NewCriticalPoint(-10, -1),
+			NewCriticalPoint(0, 0),
+			NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 0.1),
+		NewCriticalPoint(10, 0.1),
+		100)
+
+	g1 := NewGroup(a1)
+	s := NewSeries(g1, g1, g1)
+
 	bec := BatteryEnergyConstraint(&s, pid1, 1)
 	for _, c := range bec {
-		//fmt.Println(bec)
 		err := s.NewConstraint(c)
 		assert.Nil(t, err)
 	}
 
 	sec := s.Constraints()
-	assert.Equal(t, []float64{0, -1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, sec[0])
-	assert.Equal(t, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0}, sec[1])
+	assert.Equal(t, []float64{0, 10, 0, -10, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, -100, 0, 0, 0, 0, 0, 0, 0, 0, 0}, sec[0])
+	assert.Equal(t, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, -10, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, -100, 0}, sec[1])
 }
-*/
+
+func TestSeriesBatteryEnergyConstraintMultiUnit(t *testing.T) {
+	pid1, _ := uuid.NewUUID()
+	a1 := NewBasicUnit(
+		pid1,
+		[]CriticalPoint{
+			NewCriticalPoint(0, 0),
+			NewCriticalPoint(5, 1),
+			NewCriticalPoint(20, 5)},
+		NewCriticalPoint(20, 0.1),
+		NewCriticalPoint(0, 0))
+
+	pid2, _ := uuid.NewUUID()
+	a2 := NewEssUnit(
+		pid2,
+		[]CriticalPoint{
+			NewCriticalPoint(-10, -1),
+			NewCriticalPoint(0, 0),
+			NewCriticalPoint(10, 1)},
+		NewCriticalPoint(10, 0.1),
+		NewCriticalPoint(10, 0.1),
+		100)
+
+	g1 := NewGroup(a1, a2)
+	s := NewSeries(g1, g1, g1)
+
+	bec := BatteryEnergyConstraint(&s, a2.PID(), 1)
+	for _, c := range bec {
+		err := s.NewConstraint(c)
+		assert.Nil(t, err)
+	}
+
+	sec := s.Constraints()
+	assert.Equal(t, []float64{0, 0, 0, 0, 0, 0, 0, 0, 10, 0, -10, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, sec[0])
+	assert.Equal(t, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, -10, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -100, 0}, sec[1])
+}
